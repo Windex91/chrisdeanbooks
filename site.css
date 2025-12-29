@@ -174,3 +174,8 @@ h1{font-size:clamp(2.1rem, 4vw, 3.2rem); line-height:1.1; margin:0 0 14px}
   .menu{display:block}
   .nav--mobile{display:block}
 }
+.brand__signature {
+  height: 48px;
+  width: auto;
+  display: block;
+}
