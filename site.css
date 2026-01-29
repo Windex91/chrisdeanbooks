@@ -232,3 +232,21 @@ img {
   border-radius: 16px;
   margin: 0 auto 18px;
 }
+/* Home welcome hero image sizing + layout tweak */
+.hero__grid--welcome{
+  grid-template-columns:.75fr 1.25fr;
+  align-items:center;
+}
+
+.hero__media--welcome{
+  display:flex;
+  justify-content:center;
+}
+
+.hero__image--welcome{
+  width:100%;
+  max-width:320px;
+  max-height:420px;
+  object-fit:cover;
+  border-radius:20px;
+}
