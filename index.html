@@ -27,10 +27,11 @@
 </a>
 
       <nav class="nav" aria-label="Primary">
-        <a href="/about.html">About</a>
-        <a href="/books.html">Books</a>
-        <a href="/newsletter.html">Newsletter</a>
-        <a class="btn btn--ghost" href="/contact.html">Contact</a>
+       <a href="/" class="nav__link">Home</a>
+<a href="/books.html" class="nav__link">Books</a>
+<a href="/latest.html" class="nav__link">Latest</a>
+<a href="/coming-soon.html" class="nav__link">Coming soon</a>
+<a href="/contact.html" class="nav__link nav__button">Contact</a>
       </nav>
 
       <button class="menu" type="button" aria-label="Open menu" aria-expanded="false">
@@ -46,62 +47,43 @@
     </div>
   </header>
 
-  <main id="main">
-    <section class="hero">
-      <div class="wrap hero__grid">
-        <div class="hero__copy">
-          <p class="kicker">Science Fiction • Fantasy</p>
-          <h1>The Glass Tapestry</h1>
-          <p class="lede">
-            Christopher Dean's debut novel delivers a compelling story about the realities we create
-            —and the ones we can’t stop longing for.
-            If you like high‑concept fiction with real emotional stakes, you’re in the right place.
-          </p>
-
-          <div class="cta">
-            <a class="btn" href="/books.html">The books</a>
-            <a class="btn btn--ghost" href="/newsletter.html">Get updates</a>
-          </div>
-
-          <ul class="bullets" aria-label="Quick highlights">
-            <li>Book One published September 2025</li>
-            <li>Book Two TBA</li>
-            <li>A Saga of Gods and Kings - Coming Soon</li>
-          </ul>
-        </div>
-
-        <div class="hero__card" role="region" aria-label="Featured book">
-          <div class="card">
-            <div class="card__top">
-              <div class="book__cover">
-  <img
-    class="cover__img"
-    src="/assets/cover-featured.jpg"
-    alt="Cover of The Glass Tapestry by Christopher Dean"
-    loading="lazy"
-  />
-</div>
-            </div>
-            <div class="card__body">
-              <h3 class="featured_title">The Glass Tapestry</h3>
-              <p class="featured_blurb">
-              Every choice creates a new world.  
-              He can see them all—and now he’s trapped in the wrong one.
-              </p>
-
-              <div class="card__actions">
-                <a class="btn btn--small" href="/books.html#featured">Read more</a>
-                <a class="btn btn--small btn--ghost" href="/newsletter.html">Join the list</a>
-              </div>
-            </div>
-          </div>
-
-          <p class="fineprint">
-            
-          </p>
-        </div>
+<main id="main">
+  <section class="hero">
+    <div class="wrap hero__inner">
+      <div class="hero__media">
+        <img
+          src="/assets/author.jpg"
+          alt="Christopher Dean"
+          class="hero__image"
+          loading="eager"
+        />
       </div>
-    </section>
+
+      <div class="hero__content">
+        <p class="kicker">EPIC FANTASY • SPECULATIVE FICTION</p>
+        <h1>Welcome to Chris Dean Books</h1>
+
+        <p class="lead">
+          This website is the homepage of Christopher Dean, author of Epic Fantasy and Speculative Fiction novels.
+          He has spent his whole life living in the Hunter Valley, NSW, Australia, and believes he doesn’t need to see
+          any more of the world than what his own backyard has to offer. So have a look around, get in touch, and we hope
+          you enjoy the journey.
+        </p>
+
+        <div class="hero__actions">
+          <a class="btn btn--primary" href="/books.html">Explore books</a>
+          <a class="btn btn--ghost" href="/latest.html">Latest release</a>
+        </div>
+
+        <ul class="hero__bullets">
+          <li><a href="/coming-soon.html">Coming soon: what I’m working on</a></li>
+          <li><a href="/contact.html">Contact & social links</a></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+</main>
+
 
     <section class="section">
       <div class="wrap">
