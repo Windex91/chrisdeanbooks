@@ -77,6 +77,26 @@ a{color:inherit}
 
 .hero{padding:54px 0 22px}
 .hero__grid{display:grid; grid-template-columns: 1.25fr .75fr; gap:28px; align-items:start}
+.hero__inner{
+  display:grid;
+  grid-template-columns:320px 1fr;
+  gap:32px;
+  align-items:center;
+}
+
+.hero__media{
+  display:flex;
+  justify-content:center;
+}
+
+.hero__image{
+  width:100%;
+  max-width:320px;
+  max-height:420px;
+  object-fit:cover;
+  border-radius:20px;
+}
+
 .kicker{color:var(--muted); letter-spacing:.18em; text-transform:uppercase; font-size:.78rem; margin:0 0 10px}
 h1{font-size:clamp(2.1rem, 4vw, 3.2rem); line-height:1.1; margin:0 0 14px}
 .lede{color:var(--muted); font-size:1.08rem; margin:0 0 18px; max-width:60ch}
