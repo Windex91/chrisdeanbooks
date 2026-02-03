@@ -258,3 +258,183 @@ body.home::after{
   pointer-events:none;
   background: radial-gradient(1200px 800px at 50% 25%, rgba(0,0,0,0), rgba(0,0,0,.55) 70%);
 }
+/* ===== Redesign: Fantasy parchment / ink theme (Home) ===== */
+
+:root{
+  --ink:#151515;
+  --ink2:#2a2a2a;
+  --paper:#f3ead6;
+  --paper2:#ead9bd;
+  --paper3:#dcc6a2;
+  --edge: rgba(20,20,20,.18);
+  --shadow: rgba(0,0,0,.35);
+}
+
+/* Home background becomes parchment */
+body.home{
+  background:
+    radial-gradient(1200px 700px at 20% 10%, rgba(255,255,255,.55), rgba(255,255,255,0) 60%),
+    radial-gradient(1100px 700px at 80% 0%, rgba(255,255,255,.35), rgba(255,255,255,0) 60%),
+    linear-gradient(180deg, var(--paper), var(--paper2) 60%, var(--paper3));
+  color: var(--ink);
+}
+
+/* subtle paper grain */
+body.home::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  pointer-events:none;
+  z-index:-1;
+  background-image:
+    radial-gradient(circle at 20% 30%, rgba(0,0,0,.035) 0 1px, transparent 1px),
+    radial-gradient(circle at 70% 60%, rgba(0,0,0,.03) 0 1px, transparent 1px),
+    radial-gradient(circle at 40% 80%, rgba(0,0,0,.025) 0 1px, transparent 1px);
+  background-size: 120px 120px, 160px 160px, 220px 220px;
+  opacity:.55;
+}
+
+/* override link colors on parchment */
+body.home a{ color: inherit; }
+
+/* Header */
+.header--parchment{
+  background: rgba(243,234,214,.70);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--edge);
+}
+
+.header__inner{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 16px;
+}
+
+.brand__signature{
+  height: 34px;
+  width: auto;
+  display:block;
+  filter: invert(1); /* signature file is white; invert to ink */
+  opacity:.92;
+}
+
+/* Nav */
+.nav--parchment{
+  display:flex;
+  align-items:center;
+  gap: 18px;
+}
+
+.nav--parchment .nav__link{
+  text-decoration:none;
+  color: var(--ink2);
+  font-weight: 600;
+  letter-spacing: .02em;
+  padding: 10px 10px;
+  border-radius: 12px;
+}
+
+.nav--parchment .nav__link:hover{
+  background: rgba(20,20,20,.06);
+}
+
+.nav--parchment .nav__button{
+  border: 1px solid rgba(20,20,20,.20);
+  background: rgba(255,255,255,.35);
+}
+
+/* Hero */
+.hero--parchment{
+  padding: 52px 0 52px;
+}
+
+.hero__grid--parchment{
+  display:grid;
+  grid-template-columns: 360px 1fr;
+  gap: 44px;
+  align-items: center;
+}
+
+/* Author photo */
+.hero__image--parchment{
+  width:100%;
+  max-width:360px;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  border-radius: 18px;
+  border: 1px solid rgba(20,20,20,.18);
+  box-shadow: 0 18px 60px var(--shadow);
+  background: rgba(20,20,20,.06);
+}
+
+.kicker--ink{
+  text-transform: uppercase;
+  letter-spacing: .18em;
+  font-size: .78rem;
+  margin: 0 0 10px;
+  color: rgba(20,20,20,.70);
+}
+
+.title--ink{
+  margin: 0 0 12px;
+  font-size: clamp(2.1rem, 4vw, 3.2rem);
+  line-height: 1.08;
+  color: var(--ink);
+}
+
+.lede--ink{
+  margin: 0 0 18px;
+  max-width: 62ch;
+  color: rgba(20,20,20,.82);
+}
+
+/* Buttons */
+.btn--ink{
+  border-radius: 14px;
+  border: 1px solid rgba(20,20,20,.22);
+  background: rgba(20,20,20,.08);
+  color: var(--ink);
+}
+
+.btn--ink:hover{
+  background: rgba(20,20,20,.12);
+}
+
+.btn--ink.btn--ghost{
+  background: rgba(255,255,255,.28);
+}
+
+.inklink{
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+
+/* Footer */
+.footer--parchment{
+  border-top: 1px solid var(--edge);
+  padding: 28px 0 44px;
+  margin-top: 30px;
+}
+
+.fineprint--ink{
+  color: rgba(20,20,20,.72);
+}
+
+/* Responsive */
+@media (max-width: 900px){
+  .hero__grid--parchment{
+    grid-template-columns: 1fr;
+    gap: 22px;
+  }
+  .hero__image--parchment{
+    max-width: 320px;
+    margin: 0 auto;
+  }
+  .nav--parchment{
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content:flex-end;
+  }
+}
