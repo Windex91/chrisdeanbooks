@@ -14,109 +14,77 @@
 <link rel="stylesheet" href="site.css" />
 </head>
 <body class="home">
-  <a class="skip" href="#main">Skip to content</a>
+   <a class="skip" href="#main">Skip to content</a>
 
-  <header class="header">
+  <header class="header header--parchment">
     <div class="wrap header__inner">
-      <a class="brand" href="/" aria-label="Christopher Dean Books home">
-  <img 
-    src="/assets/signature-white.PNG"
-    alt="Christopher Dean"
-    class="brand__signature"
-  />
-</a>
+      <a class="brand" href="/" aria-label="Chris Dean Books home">
+        <img
+          src="/assets/signature-white.PNG"
+          alt="Christopher Dean"
+          class="brand__signature"
+          loading="eager"
+        />
+      </a>
 
-      <nav class="nav" aria-label="Primary">
-       <a href="/" class="nav__link">Home</a>
-<a href="/books.html" class="nav__link">Books</a>
-<a href="/latest.html" class="nav__link">Latest</a>
-<a href="/coming-soon.html" class="nav__link">Coming soon</a>
-<a href="/contact.html" class="nav__link nav__button">Contact</a>
+      <nav class="nav nav--parchment" aria-label="Primary">
+        <a class="nav__link" href="/">Home</a>
+        <a class="nav__link" href="/books.html">Books</a>
+        <a class="nav__link" href="/latest.html">Latest</a>
+        <a class="nav__link" href="/coming-soon.html">Coming Soon</a>
+        <a class="nav__link nav__button" href="/contact.html">Contact</a>
       </nav>
-
-      <button class="menu" type="button" aria-label="Open menu" aria-expanded="false">
-        <span aria-hidden="true"></span><span aria-hidden="true"></span><span aria-hidden="true"></span>
-      </button>
-    </div>
-
-    <div class="wrap nav--mobile" hidden>
-      <a href="/about.html">About</a>
-      <a href="/books.html">Books</a>
-      <a href="/newsletter.html">Newsletter</a>
-      <a href="/contact.html">Contact</a>
     </div>
   </header>
 
-<main id="main">
-  <section class="hero">
-    <div class="wrap hero__grid hero__grid--welcome">
-      <div class="hero__media hero__media--welcome">
-        <img
-          <img src="/assets/author.jpg" 
-          alt="Christopher Dean" 
-          class="hero__image hero__image--welcome" />
-        
-              </div>
-
-      <div class="hero__copy">
-        <p class="kicker">EPIC FANTASY • SPECULATIVE FICTION</p>
-        <h1>Welcome to Chris Dean Books</h1>
-
-        <p class="lede">
-          This website is the homepage of Christopher Dean, author of Epic Fantasy and Speculative Fiction novels.
-          He has spent his whole life living in the Hunter Valley, NSW, Australia, and is a lover of all things fantasy and fiction.
-          His journey as an author began as nothing more than imagining epic stories and finding the beauty in the ordinary things that surrounded his life.
-          So have a look around, get in touch, and we hope
-          you enjoy the journey.
-        </p>
-
-        <div class="cta">
-          <a class="btn btn--primary" href="/books.html">Explore books</a>
-          <a class="btn btn--ghost" href="/latest.html">Latest release</a>
+  <main id="main">
+    <section class="hero hero--parchment">
+      <div class="wrap hero__grid hero__grid--parchment">
+        <div class="hero__media hero__media--parchment">
+          <img
+            src="/assets/author.jpg"
+            alt="Christopher Dean"
+            class="hero__image hero__image--parchment"
+            loading="eager"
+          />
         </div>
 
-        <ul class="bullets" aria-label="Quick links">
-          <li><a href="/coming-soon.html">Coming soon: what I’m working on</a></li>
-          <li><a href="/contact.html">Contact & social links</a></li>
-        </ul>
-      </div>
-    </div>
-  </section>
-</main>
+        <div class="hero__copy">
+          <p class="kicker kicker--ink">Epic Fantasy • Speculative Fiction</p>
+          <h1 class="title title--ink">Welcome to Chris Dean Books</h1>
 
+          <p class="lede lede--ink">
+            This website is the homepage of Christopher Dean, author of Epic Fantasy and Speculative Fiction novels.
+            He has spent his whole life living in the Hunter Valley, NSW, Australia, and believes he doesn’t need to see
+            any more of the world than what his own backyard has to offer. So have a look around, get in touch, and we hope
+            you enjoy the journey.
+          </p>
 
-    <section class="section">
-      <div class="wrap">
-        <h2>Start here</h2>
-        <div class="grid grid--3">
-          <a class="panel" href="/books.html">
-            <h3>Books</h3>
-            <p>Series order, blurbs, and retailer links.</p>
-          </a>
-          <a class="panel" href="/about.html">
-            <h3>About</h3>
-            <p>Short bio, longer bio, and what I write.</p>
-          </a>
-          <a class="panel" href="/newsletter.html">
-            <h3>Newsletter</h3>
-            <p>Get updates when new releases drop.</p>
-          </a>
+          <div class="cta">
+            <a class="btn btn--ink" href="/books.html">Books</a>
+            <a class="btn btn--ink btn--ghost" href="/latest.html">Latest</a>
+            <a class="btn btn--ink btn--ghost" href="/coming-soon.html">Coming Soon</a>
+            <a class="btn btn--ink btn--ghost" href="/contact.html">Contact</a>
+          </div>
+
+          <p class="fineprint fineprint--ink">
+            Email: <a class="inklink" href="mailto:chris@chrisdeanbooks.com">chris@chrisdeanbooks.com</a>
+          </p>
         </div>
       </div>
     </section>
+
+    <footer class="footer footer--parchment">
+      <div class="wrap footer__inner">
+        <p class="fineprint fineprint--ink">© <span id="y"></span> Christopher Dean.</p>
+      </div>
+    </footer>
   </main>
 
-  <footer class="footer">
-    <div class="wrap footer__inner">
-      <p>© <span id="year"></span> Christopher Dean. All rights reserved.</p>
-      <div class="footer__links">
-        <a href="/contact.html">Contact</a>
-        <a href="/newsletter.html">Newsletter</a>
-      </div>
-    </div>
-  </footer>
+  <script>
+    document.getElementById("y").textContent = new Date().getFullYear();
+  </script>
 
-  <script src="site.js"></script>
 </body>
 </html>
 /*.html
