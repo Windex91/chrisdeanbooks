@@ -1,6 +1,6 @@
 import test,{beforeEach} from 'node:test';
 import assert from 'node:assert/strict';
-import {ITEMS,cleanCart,shippingForCart,verifyStripeSignature,purchasedSkus,ebookKey,normalizeSender,reserveInventory,attachCheckoutSession,settleInventory,releaseInventory,StockUnavailableError} from '../lib/commerce.js';
+import {ITEMS,cleanCart,shippingForCart,verifyStripeSignature,purchasedSkus,ebookKey,reserveInventory,attachCheckoutSession,settleInventory,releaseInventory,StockUnavailableError} from '../lib/commerce.js';
 import {onRequestGet as catalog} from '../functions/api/catalog.js';
 import {onRequestPost as checkout} from '../functions/api/checkout.js';
 import {onRequestGet as download} from '../functions/api/download.js';
@@ -340,14 +340,4 @@ test('ebook-only Checkout reserves no physical stock',async()=>{
   await attachCheckoutSession(db,id,'cs_test_ebook123');
   await settleInventory(db,id,'cs_test_ebook123');
   assert.deepEqual(db.inspect('wildborn-paperback'),{on_hand:10,reserved:0,sold:0});
-});
-
-test('Resend sender normalisation supports the verified email display name',()=>{
-  assert.equal(normalizeSender('Christopher Dean Books website@mail.chrisdeanbooks.com'),
-    'Christopher Dean Books <website@mail.chrisdeanbooks.com>');
-  assert.equal(normalizeSender('Christopher Dean Books <website@mail.chrisdeanbooks.com>'),
-    'Christopher Dean Books <website@mail.chrisdeanbooks.com>');
-  assert.equal(normalizeSender('website@mail.chrisdeanbooks.com'),'website@mail.chrisdeanbooks.com');
-  assert.throws(()=>normalizeSender('Christopher Dean Books without an address'),/Email sender address/);
-  assert.throws(()=>normalizeSender(undefined),/Email sender address/);
 });

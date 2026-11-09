@@ -42,8 +42,8 @@ Stripe Tax settings are active on the connected **sandbox account**, but there a
 - **Provisional postage tiers** are configured using Australia Post 1 July 2026 prepaid satchel rates. Confirm actual packaging fit and dispatch timeframe before live checkout.
 - **Starting inventory confirmed:** Beneath Falling Leaves 10, Wildborn 10, The Glass Tapestry 1. `db_schema.sql` seeds these counts once with `INSERT OR IGNORE`. Apply this on a dedicated preview D1; separately seed production only when opening real sales. A code deployment does not create/update D1 tables.
 - **Inventory reservation controls are implemented but not integration-tested:** verify concurrent last-copy checkouts, webhook retries, abandoned Checkout expiry, full paid settlement and stock restoration on Stripe creation errors in a real D1 environment before activation. Keep SHOP_ENABLED=false meanwhile. Offline sales or author copies need manual stock adjustments.
-- **Retail EPUB files** were supplied and uploaded to private R2; confirmed all three exact keys and EPUB content types on 10 November 2026.
-- **Resend** previously reported `resend-http-401-validation_error` on the contact form, so customer/owner fulfilment emails remain unverified. Sender formatting is now normalized server-side, but a 401 may indicate invalid or insufficient API authentication; test and resolve before enabling checkout.
+- **Retail EPUB files** have not been supplied or uploaded to private R2.
+- **Resend** currently reports `resend-http-401-validation_error` on the contact form, so customer/owner fulfilment emails are not yet verified.
 - **Privacy, shipping and returns policies** still need business-specific approval.
 - **Checkout and fulfilment end-to-end tests** (including webhook retries, mixed carts, physical fulfilment, ebook entitlements, Stripe refunds and browser/mobile QA) must pass.
 - **Protected order links** currently use a paid Checkout Session ID as a bearer credential. Add expiring download links/customer authentication before production, or explicitly accept the risks of transferable download links.
