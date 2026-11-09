@@ -42,7 +42,8 @@ test('contact form delivers to author mailbox with reply-to set to visitor',asyn
   let actualPayload;
   globalThis.fetch=async(url,options)=>{
     if(url.includes('turnstile/v0/siteverify')){
-      assert.equal(new URLSearchParams(options.body).get('response'),payload.turnstileToken);
+      assert.equal(options.headers['Content-Type'],'application/json');
+      assert.equal(JSON.parse(options.body).response,payload.turnstileToken);
       return new Response(JSON.stringify({success:true,hostname:new URL(site).hostname}),{status:200});
     }
     assert.equal(url,'https://api.resend.com/emails');
@@ -70,5 +71,48 @@ test('contact form rejects Turnstile tokens verified for another hostname',async
   try{
     const response=await contact({request:request(),env});
     assert.equal(response.status,400);
+  }finally{globalThis.fetch=original;}
+});
+
+test('contact form distinguishes a Siteverify HTTP rejection from email delivery',async()=>{
+  const original=globalThis.fetch;
+  let emailRequests=0;
+  globalThis.fetch=async(url,options)=>{
+    if(url.includes('turnstile/v0/siteverify')){
+      assert.equal(options.headers['Content-Type'],'application/json');
+      return new Response(JSON.stringify({success:false,'error-codes':['invalid-input-secret']}),{status:400});
+    }
+    emailRequests++;
+    return new Response('{}',{status:200});
+  };
+  try{
+    const res=await contact({request:request(),env});
+    const body=await res.json();
+    assert.equal(res.status,502);
+    assert.equal(body.diagnostic,'turnstile-http-400-invalid-input-secret');
+    assert.equal(emailRequests,0);
+  }finally{globalThis.fetch=original;}
+});
+
+test('contact form rejects an expired Turnstile token without sending email',async()=>{
+  const original=globalThis.fetch;
+  globalThis.fetch=async()=>new Response(JSON.stringify({success:false,'error-codes':['timeout-or-duplicate']}),{status:200});
+  try{
+    const res=await contact({request:request(),env});
+    const body=await res.json();
+    assert.equal(res.status,400);
+    assert.equal(body.diagnostic,'turnstile-timeout-or-duplicate');
+  }finally{globalThis.fetch=original;}
+});
+
+test('contact form handles non-JSON Siteverify errors without exposing credentials',async()=>{
+  const original=globalThis.fetch;
+  globalThis.fetch=async()=>new Response('Service error',{status:503});
+  try{
+    const res=await contact({request:request(),env});
+    const body=await res.json();
+    assert.equal(res.status,502);
+    assert.equal(body.diagnostic,'turnstile-connection');
+    assert.ok(!JSON.stringify(body).includes(env.TURNSTILE_SECRET_KEY));
   }finally{globalThis.fetch=original;}
 });

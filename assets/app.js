@@ -75,7 +75,7 @@
       try{
         const res=await fetch('/api/contact',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...body,turnstileToken:token})});
         const data=await res.json();
-        if(!res.ok||data.sent!==true)throw Error(data.error||'Your message could not be sent.');
+        if(!res.ok||data.sent!==true)throw Error((data.error||'Your message could not be sent.')+(data.diagnostic?' [Diagnostic: '+data.diagnostic+']':''));
         form.reset();status.textContent='Message sent to chris@chrisdeanbooks.com. Thank you!';
       }catch(err){status.textContent=err.message||'Message delivery failed. Please use the direct email link.';}
       finally{button.disabled=false;if(window.turnstile)window.turnstile.reset();}

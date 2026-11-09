@@ -20,14 +20,44 @@ export async function onRequestPost({request,env}){
        typeof turnstileToken!=='string'||turnstileToken.length<10||turnstileToken.length>2048){
       return json({error:'Please check your name, email and message.'},400);
     }
-    const verification=new URLSearchParams({secret:env.TURNSTILE_SECRET_KEY,response:turnstileToken});
+    const requestHost=new URL(request.url).hostname;
+    const preview=requestHost.endsWith('.pages.dev');
+    // Turnstile's Siteverify API accepts JSON. Never trust the browser's green
+    // checkmark without successfully validating its single-use token here.
+    const verification={secret:env.TURNSTILE_SECRET_KEY,response:turnstileToken};
     const ip=request.headers.get('CF-Connecting-IP');
-    if(ip)verification.set('remoteip',ip);
-    const checked=await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify',{method:'POST',body:verification});
-    if(!checked.ok)return json({error:'Anti-spam verification is temporarily unavailable.'},502);
-    const result=await checked.json();
-    if(!result.success||result.hostname!==new URL(request.url).hostname){
-      return json({error:'Please complete the anti-spam check.'},400);
+    if(ip)verification.remoteip=ip;
+    let checked,result;
+    try{
+      checked=await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify(verification)
+      });
+      result=await checked.json();
+    }catch(error){
+      console.error('Turnstile Siteverify request failed:',error.name);
+      return json({error:'Security verification service could not be reached. Please email chris@chrisdeanbooks.com directly.',
+        ...(preview?{diagnostic:'turnstile-connection'}:{})},502);
+    }
+    // Return only a vendor error CODE on preview sites for troubleshooting;
+    // never expose submitted tokens, private keys, raw responses, or IPs.
+    const codes=Array.isArray(result?.['error-codes'])?result['error-codes']:[];
+    const firstCode=typeof codes[0]==='string'&&/^[a-z0-9-]{1,64}$/.test(codes[0])?codes[0]:'unknown';
+    if(!checked.ok){
+      console.error('Turnstile Siteverify HTTP failure:',checked.status,firstCode);
+      return json({error:'Security verification was rejected by Cloudflare. Please email chris@chrisdeanbooks.com directly.',
+        ...(preview?{diagnostic:'turnstile-http-'+checked.status+'-'+firstCode}:{})},502);
+    }
+    if(result?.success!==true){
+      console.warn('Turnstile Siteverify token rejected:',firstCode);
+      return json({error:'Anti-spam verification failed. Refresh the page and try again.',
+        ...(preview?{diagnostic:'turnstile-'+firstCode}:{})},400);
+    }
+    if(result.hostname!==requestHost){
+      console.warn('Turnstile Siteverify hostname mismatch');
+      return json({error:'Anti-spam verification could not confirm the website.',
+        ...(preview?{diagnostic:'turnstile-hostname-mismatch'}:{})},400);
     }
     const safeName=name.trim().replace(/[\r\n]+/g,' ').slice(0,120);
     const content='<h2>Christopher Dean Books — website enquiry</h2>'+
@@ -38,6 +68,7 @@ export async function onRequestPost({request,env}){
     return json({sent:true});
   }catch(error){
     console.error('Contact delivery:',error.message);
-    return json({error:'Message delivery is temporarily unavailable. Please email chris@chrisdeanbooks.com directly.'},502);
+    return json({error:'Message delivery is temporarily unavailable. Please email chris@chrisdeanbooks.com directly.',
+      ...(new URL(request.url).hostname.endsWith('.pages.dev')?{diagnostic:'contact-delivery'}:{})},502);
   }
 }
