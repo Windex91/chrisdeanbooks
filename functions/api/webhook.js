@@ -1,4 +1,5 @@
 import {verifyStripeSignature,json,lineItems,purchasedSkus,siteUrl,sendResend,escapeHtml,settleInventory,releaseInventory} from '../../lib/commerce.js';
+import {createEbookAccess} from '../../lib/access.js';
 export async function onRequestPost({request,env}){
   if(!env.STRIPE_WEBHOOK_SECRET||!env.ORDERS)return json({error:'Webhook is not configured'},503);
   const payload=await request.text();if(payload.length>100000)return json({error:'Payload too large'},413);
@@ -21,9 +22,9 @@ export async function onRequestPost({request,env}){
     await settleInventory(env.ORDERS,session.metadata.reservation_id,session.id);
     await env.ORDERS.prepare('INSERT OR IGNORE INTO orders (session_id, email, items_json, shipping_json) VALUES (?, ?, ?, ?)').bind(session.id,email,JSON.stringify(items),JSON.stringify(address)).run();
     const row=await env.ORDERS.prepare('SELECT customer_notified, owner_notified FROM orders WHERE session_id = ?').bind(session.id).first();
-    const safeName=escapeHtml(session.customer_details?.name||'reader');const orderUrl=siteUrl(env)+'/success/?session_id='+encodeURIComponent(session.id);
+    const safeName=escapeHtml(session.customer_details?.name||'reader');const claim=await createEbookAccess(env,session);const orderUrl=siteUrl(env)+'/success/?access='+encodeURIComponent(claim);
     if(!row.customer_notified){
-      const message=`<div style="font-family:Georgia,serif;background:#101214;color:#f1ece2;padding:35px;max-width:650px"><h1 style="color:#d5b37a">Thank you, ${safeName}.</h1><p>Your order at Christopher Dean Books has been paid successfully.</p><p>${items.some(x=>x.physical)?'Any physical books in your order will be packed and shipped by the author. ':''}${items.some(x=>!x.physical)?'Your ebook download is available through the secure order page below.':''}</p><p><a style="display:inline-block;background:#d5b37a;color:#111;padding:14px 22px" href="${orderUrl}">View order & downloads</a></p><p style="font-size:12px">Keep this link private. It grants access to your purchased ebook downloads.</p></div>`;
+      const message=`<div style="font-family:Georgia,serif;background:#101214;color:#f1ece2;padding:35px;max-width:650px"><h1 style="color:#d5b37a">Thank you, ${safeName}.</h1><p>Your order at Christopher Dean Books has been paid successfully.</p><p>${items.some(x=>x.physical)?'Any physical books in your order will be packed and shipped by the author. ':''}${items.some(x=>!x.physical)?'Your ebook download is available through the secure order page below.':''}</p><p><a style="display:inline-block;background:#d5b37a;color:#111;padding:14px 22px" href="${orderUrl}">View order & downloads</a></p><p style="font-size:12px">Keep this link private. Ebook download access expires seven days after purchase. Email the author for help after expiry.</p></div>`;
       await sendResend(env,email,'Your Christopher Dean Books order',message);
       await env.ORDERS.prepare('UPDATE orders SET customer_notified=1 WHERE session_id=?').bind(session.id).run();
     }

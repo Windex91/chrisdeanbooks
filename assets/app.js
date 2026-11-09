@@ -52,12 +52,25 @@
     location.assign(data.url);
   }catch(err){note.textContent=err.message||'Checkout could not be opened.';button.disabled=false;button.textContent='Continue to secure checkout ↗';}}
   $('#checkout-button')?.addEventListener('click',checkout);
-  async function orderStatus(){const box=$('#order-status');if(!box)return;const session=new URLSearchParams(location.search).get('session_id');if(!session){box.innerHTML='<h2>No order found</h2><p>We did not receive an order reference. Please use the confirmation link provided after checkout.</p>';return;}
-    try{const res=await fetch('/api/order?session_id='+encodeURIComponent(session),{cache:'no-store'});const data=await res.json();if(!res.ok)throw Error(data.error||'Unable to check your order.');if(!data.paid){box.innerHTML='<h2>Payment not yet confirmed</h2><p>If you have just paid, please check back shortly. Downloads are only made available after payment is verified.</p>';return;}
-      const files=(data.downloads||[]).map(item=>`<a class="download-link" rel="noreferrer" href="/api/download?session_id=${encodeURIComponent(session)}&sku=${encodeURIComponent(item.sku)}">Download ${item.title} (${item.format}) ↓</a>`).join('');
-      box.innerHTML=`<p class="eyebrow">PAYMENT CONFIRMED</p><h2>Your order is on its way.</h2><p>Thank you for supporting independent storytelling. ${data.hasPhysical?'Your paperback order will be packed and posted by the author.':''}</p>${files||'<p>No digital files are included in this order.</p>'}`;
+  async function orderStatus(){
+    const box=$('#order-status');if(!box)return;
+    const params=new URLSearchParams(location.search);
+    const access=params.get('access'),session=params.get('session_id');
+    if(!access&&!session){box.innerHTML='<h2>No order reference found</h2><p>Please follow the link in your order confirmation email, or contact the author for help.</p>';return;}
+    try{
+      const query=access?'access='+encodeURIComponent(access):'session_id='+encodeURIComponent(session);
+      const res=await fetch('/api/order?'+query,{cache:'no-store'});
+      const data=await res.json();
+      if(!res.ok)throw Error(data.error||'Unable to check your order.');
+      if(!data.paid){box.innerHTML='<h2>Payment not yet confirmed</h2><p>If you have just paid, please check your email. The confirmation link will arrive after payment is verified.</p>';return;}
+      if(data.requiresEmailLink){
+        box.innerHTML='<p class="eyebrow">PAYMENT CONFIRMED</p><h2>Thank you for your order.</h2><p>Your receipt and, where applicable, a private ebook download link will be emailed to the address provided at checkout. If it does not arrive, please check your spam folder or email chris@chrisdeanbooks.com.</p>';
+        cart={};save();return;
+      }
+      const files=(data.downloads||[]).map(item=>`<a class="download-link" rel="noreferrer" href="/api/download?access=${encodeURIComponent(access)}&sku=${encodeURIComponent(item.sku)}">Download ${escapeHtml(item.title)} (${escapeHtml(item.format)}) ↓</a>`).join('');
+      box.innerHTML=`<p class="eyebrow">PAYMENT CONFIRMED</p><h2>Your order is on its way.</h2><p>Thank you for supporting independent storytelling. ${data.hasPhysical?'Your paperback order will be packed and posted by the author.':''}</p>${files||'<p>No digital files are included in this order.</p>'}<p>Private ebook links expire seven days after purchase. Contact chris@chrisdeanbooks.com for download assistance.</p>`;
       cart={};save();
-    }catch(err){box.innerHTML='<h2>Order lookup unavailable</h2><p>'+escapeHtml(err.message||'Please try the original order link again.')+'</p>';}
+    }catch(err){box.innerHTML='<h2>Order lookup unavailable</h2><p>'+escapeHtml(err.message||'Please contact chris@chrisdeanbooks.com')+'</p>';}
   }
   function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
   async function setupContact(){

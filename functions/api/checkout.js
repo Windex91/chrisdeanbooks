@@ -4,7 +4,7 @@ export async function onRequestPost({request,env}){
     if(env.SHOP_ENABLED!=='true')return json({error:'The bookshop is in preview mode. Checkout is not enabled yet.'},503);
     const origin=siteUrl(env);
     if(request.headers.get('Origin')&&request.headers.get('Origin')!==origin)return json({error:'Origin not allowed'},403);
-    if(!env.STRIPE_SECRET_KEY||!env.STRIPE_WEBHOOK_SECRET||!env.RESEND_API_KEY||!env.RESEND_FROM_ADDRESS||!env.SHOP_OWNER_EMAIL||!env.ORDERS)return json({error:'Shop payment and fulfilment services are not completely configured'},503);
+    if(!env.STRIPE_SECRET_KEY||!env.STRIPE_WEBHOOK_SECRET||!env.RESEND_API_KEY||!env.RESEND_FROM_ADDRESS||!env.SHOP_OWNER_EMAIL||!env.ORDERS||!env.DOWNLOAD_TOKEN_SECRET)return json({error:'Shop payment and fulfilment services are not completely configured'},503);
     if(Number(request.headers.get('content-length')||0)>8000)return json({error:'Cart request too large'},413);
     const cart=cleanCart(await request.json());const hasPhysical=cart.some(x=>x.item.physical);
     for(const entry of cart){if(!priceId(env,entry.sku))return json({error:`Stripe price missing for ${entry.sku}`},503);if(!entry.item.physical){if(!env.EBOOKS)return json({error:'Ebook storage is not connected'},503);const exists=await env.EBOOKS.head(ebookKey(env,entry.sku));if(!exists)return json({error:'Ebook delivery file has not been uploaded'},503);}}

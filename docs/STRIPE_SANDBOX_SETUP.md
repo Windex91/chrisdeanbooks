@@ -27,7 +27,8 @@ Cloudflare Pages project `chrisdeanbooks` → Settings → Preview → Variables
 4. Add all six `STRIPE_PRICE_...` values from the table as Text.
 5. `SITE_URL`: the **actual** fully qualified HTTPS origin of the stable preview branch URL. It must match the origin where the visitor initiates checkout. Do not guess the branch alias; use the working Cloudflare preview URL.
 6. Australian shipping is calculated server-side based on total paperback copies using Stripe Checkout `shipping_rate_data`. No separate `shr_...` or `STRIPE_SHIPPING_RATE_AU` is required. Provisional rates: 1 paperback A$12.95, 2–3 A$16.95, 4–5 A$21.95; ebook-only A$0.00. Five paperbacks maximum per checkout. Australia only. Verify actual parcel dimensions, packaging, and dispatch time before going live.
-7. `SHOP_OWNER_EMAIL`: `chris@chrisdeanbooks.com`. The order-email sender `RESEND_FROM_ADDRESS` and `RESEND_API_KEY` must be working.
+7. `DOWNLOAD_TOKEN_SECRET`: a separate **encrypted Secret**, at least 32 unpredictable characters, for issuing 7-day ebook entitlement tokens. Do not put it in public frontend files or GitHub.
+8. `SHOP_OWNER_EMAIL`: `chris@chrisdeanbooks.com`. The order-email sender `RESEND_FROM_ADDRESS` and `RESEND_API_KEY` must be working.
 8. Bind a Cloudflare D1 database as `ORDERS` and run `db_schema.sql` (order ledger), and a **private** R2 bucket as `EBOOKS`. Upload final retail EPUBs under `ebooks/beneath-falling-leaves.epub`, `ebooks/wildborn.epub`, `ebooks/the-glass-tapestry.epub` (or override keys individually).
 9. Ensure all shipping, digital-delivery, refund, privacy and inventory policies are accurate and complete. Stock reservations are now built into D1: reserve when Checkout is created, deduct after paid webhook, release after signed `checkout.session.expired`. This is code only until the D1 binding is configured and real end-to-end tests pass.
 10. In preview only, when all configuration exists, temporarily set `SHOP_ENABLED=true` and `window.CD_STORE.live=true` in the preview branch browser catalogue, redeploy, then test **without real charges** using Stripe sandbox cards. Reset both flags to false if testing is incomplete.
@@ -46,7 +47,7 @@ Stripe Tax settings are active on the connected **sandbox account**, but there a
 - **Resend** currently reports `resend-http-401-validation_error` on the contact form, so customer/owner fulfilment emails are not yet verified.
 - **Privacy, shipping and returns policies** still need business-specific approval.
 - **Checkout and fulfilment end-to-end tests** (including webhook retries, mixed carts, physical fulfilment, ebook entitlements, Stripe refunds and browser/mobile QA) must pass.
-- **Protected order links** currently use a paid Checkout Session ID as a bearer credential. Add expiring download links/customer authentication before production, or explicitly accept the risks of transferable download links.
+- **Protected ebook links** now use a 7-day, server-HMAC-signed email token derived with `DOWNLOAD_TOKEN_SECRET`, not a bare Checkout Session ID. Configure the signing secret in Preview and Production before enabling checkout. The emailed bearer link can still be forwarded during its lifetime; customers can request a new copy by contacting the author.
 - **Paid copies** of any potentially restricted adult material must be cleared with the payment provider before listing.
 
 ## Technical notes
