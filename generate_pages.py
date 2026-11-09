@@ -3,7 +3,7 @@ from pathlib import Path
 from shutil import copy2
 root=Path(__file__).resolve().parent
 out=root/'public'
-roots=['assets','books','about','shop','contact','policies','success','cancel']
+roots=['assets','books','coming-soon','about','shop','contact','policies','success','cancel']
 for name in roots:
     folder=root/name
     if not folder.exists():continue

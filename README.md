@@ -5,7 +5,7 @@ A custom, mobile-friendly, Netflix-inspired website and direct-sales storefront 
 ## What is ready now
 
 - Cinematic landing page, animated book displays, responsive layout and mobile navigation.
-- Individual book pages for **Wildborn** and **His Name Was Monster**.
+- Individual book pages for **Wildborn** and **My Name is Monster**.
 - Wildborn paperback and ebook selector, persistent shopping cart and AU-dollar display.
 - Coming-soon entries cannot be accidentally purchased.
 - Author biography, contact-form framework, shop, policy drafts, checkout return pages, SEO metadata and sitemap.
@@ -58,7 +58,7 @@ Cloudflare Wrangler runs the local Pages environment. Create `.dev.vars` from `.
 
 ## Launch checklist — required
 
-1. **Final content** — confirm the official Wildborn retail blurb, publication status for all books, cover assets and ISBN/edition information. The copy in this build is draft promotional copy, not an official synopsis. The His Name Was Monster artwork is treated as a coming-soon concept.
+1. **Final content** — confirm the official Wildborn retail blurb, publication status for all books, cover assets and ISBN/edition information. The copy in this build is draft promotional copy, not an official synopsis. The My Name is Monster artwork is treated as a coming-soon concept.
 2. **Final prices** — edit example prices in `public/assets/catalog.js` (`2500` = A$25.00, `899` = A$8.99). These are examples only, **not confirmed prices**. Create matching one-time **AUD** Stripe Prices (for paperback and ebook). Once the store is live, the site pulls the authoritative prices from Stripe automatically.
 3. **Stripe account** — activate a Stripe business account, create the two Prices, and create an Australian fixed shipping rate. Include shipping cost, payment fees and your packing costs when setting margin. Prices and shipping are always validated on the server side.
 4. **Cloudflare D1** — create a database named e.g. `chris-dean-orders`. Run `db_schema.sql` against it. Bind it to Pages Functions as **`ORDERS`**. Orders are recorded and customer/author email delivery states are stored here. Physical stock **is not automatically reserved or decremented** in this first build; keep an accurate stock count and temporarily disable sales when needed.
@@ -171,8 +171,18 @@ Made for Christopher Dean Books, November 2026. All original book art belongs to
 
 ## Published-book library — design stage
 
-The preview now includes **Beneath Falling Leaves**, **Wildborn** and **The Glass Tapestry**, using the official pre-existing covers and author portrait. Each has a cinematic tile and an editorial description page. *His Name Was Monster* remains in Coming Soon. Real purchasing, pricing and fulfilment are deferred until visual review. The production branch is untouched.
+The preview now includes **Beneath Falling Leaves**, **Wildborn** and **The Glass Tapestry**, using the official pre-existing covers and author portrait. Each has a cinematic tile and an editorial description page. *My Name is Monster* remains in Coming Soon. Real purchasing, pricing and fulfilment are deferred until visual review. The production branch is untouched.
 
 Frontend pages have canonical copies at the repository root, which are mirrored to public/ for either Cloudflare Pages configuration. Run python generate_pages.py after changes to synchronise the static pages and assets. Cloudflare projects chrisdeanbooks and christopherdeanbooks both deploy the preview branch; prefer the first as the future canonical project subject to verifying the domain binding in Cloudflare.
 
 During current design review, cart buttons and example prices are intentionally hidden with an override in assets/style.css. Payment endpoints are still locked. Restore the storefront controls only after user approval and secure configuration.
+
+
+## November 2026 catalogue refresh
+
+- Three original updated user-supplied covers are stored as web-optimised assets: Beneath Falling Leaves, Wildborn and A Dragon’s Tale: The Quest for Dragussy.
+- The fourth cover, The Glass Tapestry, is retained from the existing published site.
+- A Dragon’s Tale is marked PRE-ORDER / 18+ throughout. The author-provided blurb appears on its book page with minor typo and sentence-case corrections. Its retailer link is not yet known; there is no fabricated link or functional pre-order button.
+- Coming Soon now features My Name is Monster (working on new cover) and Beneath Ash & Dust (sequel to Beneath Falling Leaves).
+- The former title and corresponding old cover assets are deleted from this preview branch. Production main remains unchanged.
+- All payment functionality remains disabled; the catalogue is for design review, not order taking.
