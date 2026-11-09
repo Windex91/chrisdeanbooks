@@ -67,8 +67,11 @@ export async function onRequestPost({request,env}){
     await sendResend(env,DESTINATION,'Website enquiry from '+safeName,content,email);
     return json({sent:true});
   }catch(error){
-    console.error('Contact delivery:',error.message);
+    const isPreview=new URL(request.url).hostname.endsWith('.pages.dev');
+    const diagnostic=error.provider==='resend'
+      ?'resend-http-'+error.httpStatus+'-'+error.providerCode:'contact-delivery';
+    console.error('Contact delivery failed:',error.provider||'unexpected',error.httpStatus||'no-status',error.providerCode||'');
     return json({error:'Message delivery is temporarily unavailable. Please email chris@chrisdeanbooks.com directly.',
-      ...(new URL(request.url).hostname.endsWith('.pages.dev')?{diagnostic:'contact-delivery'}:{})},502);
+      ...(isPreview?{diagnostic}:{})},502);
   }
 }

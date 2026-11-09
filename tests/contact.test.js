@@ -116,3 +116,19 @@ test('contact form handles non-JSON Siteverify errors without exposing credentia
     assert.ok(!JSON.stringify(body).includes(env.TURNSTILE_SECRET_KEY));
   }finally{globalThis.fetch=original;}
 });
+
+test('contact form reports safe Resend provider errors on previews',async()=>{
+  const original=globalThis.fetch;
+  globalThis.fetch=async(url)=>{
+    if(url.includes('siteverify'))return new Response(JSON.stringify({success:true,hostname:new URL(site).hostname}),{status:200});
+    return new Response(JSON.stringify({name:'validation_error',message:'Secret internal detail is not for clients'}),{status:422});
+  };
+  try{
+    const res=await contact({request:request(),env});
+    const body=await res.json();
+    assert.equal(res.status,502);
+    assert.equal(body.diagnostic,'resend-http-422-validation_error');
+    assert.ok(!JSON.stringify(body).includes('Secret internal detail'));
+    assert.ok(!JSON.stringify(body).includes(env.RESEND_API_KEY));
+  }finally{globalThis.fetch=original;}
+});
