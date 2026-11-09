@@ -18,7 +18,7 @@ export async function onRequestPost({request,env}){
       await env.ORDERS.prepare('UPDATE orders SET customer_notified=1 WHERE session_id=?').bind(session.id).run();
     }
     if(!row.owner_notified){
-      const detail=items.map(x=>escapeHtml(x.title+' — '+x.format)).join('<br>');const shipping=escapeHtml(JSON.stringify(address,null,2)||'No shipping address (digital-only order)');
+      const detail=items.map(x=>escapeHtml(x.title+' — '+x.format+' × '+x.quantity)).join('<br>');const shipping=escapeHtml(JSON.stringify(address,null,2)||'No shipping address (digital-only order)');
       await sendResend(env,env.SHOP_OWNER_EMAIL,'New paid book order — '+session.id,`<h2>New paid book order</h2><p>Order: ${escapeHtml(session.id)}</p><p>Customer: ${escapeHtml(email)}</p><p>Books:<br>${detail}</p><pre>${shipping}</pre><p>View the Stripe dashboard for the full order and shipping details.</p>`);
       await env.ORDERS.prepare('UPDATE orders SET owner_notified=1 WHERE session_id=?').bind(session.id).run();
     }

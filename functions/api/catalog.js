@@ -6,7 +6,9 @@ export async function onRequestGet({env}){
     for(const [sku,item] of Object.entries(ITEMS)){
       const id=priceId(env,sku);if(!id)throw Error('Missing Stripe price for '+sku);
       const price=await stripeGet(env,'/prices/'+encodeURIComponent(id));
-      if(price.currency!=='aud'||price.type!=='one_time'||!price.active||!Number.isInteger(price.unit_amount)||price.unit_amount<1)throw Error('Stripe Price must be an active one-time AUD price');
+      if(price.currency!=='aud'||price.type!=='one_time'||!price.active||
+         !Number.isInteger(price.unit_amount)||price.unit_amount!==item.expectedCents)
+        throw Error('Stripe Price does not match approved AUD price for '+sku);
       products[sku]={price:price.unit_amount};
     }
     return json({currency:'AUD',products});
