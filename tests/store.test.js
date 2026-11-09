@@ -76,7 +76,7 @@ test('all six author editions have approved prices and correct delivery formats'
     assert.equal(item.expectedCents,amount);
     assert.equal(item.physical,sku.endsWith('paperback'));
     assert.ok(env[item.priceVariable]);
-    if(!item.physical)assert.match(ebookKey(env,sku),/\\.epub$/);
+    if(!item.physical)assert.ok(ebookKey(env,sku).endsWith('.epub'));
   }
   assert.throws(()=>cleanCart({items:[{sku:'a-dragons-tale-paperback',quantity:1}]}),/Invalid cart item/);
 });
