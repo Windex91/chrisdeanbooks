@@ -1,4 +1,4 @@
-import {ITEMS,json,cleanCart,shippingForCart,priceId,ebookKey,siteUrl} from '../../lib/commerce.js';
+import {ITEMS,json,cleanCart,shippingForCart,priceId,ebookKey,siteUrl,reserveInventory,attachCheckoutSession,releaseInventory,StockUnavailableError} from '../../lib/commerce.js';
 export async function onRequestPost({request,env}){
   try{
     if(env.SHOP_ENABLED!=='true')return json({error:'The bookshop is in preview mode. Checkout is not enabled yet.'},503);
@@ -9,7 +9,11 @@ export async function onRequestPost({request,env}){
     const cart=cleanCart(await request.json());const hasPhysical=cart.some(x=>x.item.physical);
     for(const entry of cart){if(!priceId(env,entry.sku))return json({error:`Stripe price missing for ${entry.sku}`},503);if(!entry.item.physical){if(!env.EBOOKS)return json({error:'Ebook storage is not connected'},503);const exists=await env.EBOOKS.head(ebookKey(env,entry.sku));if(!exists)return json({error:'Ebook delivery file has not been uploaded'},503);}}
     const shipping=shippingForCart(cart);
-    const params=new URLSearchParams();params.set('mode','payment');params.set('success_url',origin+'/success/?session_id={CHECKOUT_SESSION_ID}');params.set('cancel_url',origin+'/cancel/');params.set('customer_creation','always');params.set('payment_method_types[0]','card');params.set('metadata[store]','chris-dean-books');if(env.STRIPE_TAX_ENABLED==='true')params.set('automatic_tax[enabled]','true');
+    // The reservation holds stock during checkout. Stripe automatically expires
+    // unpaid sessions after one hour; the signed expired webhook releases them.
+    const expiresAt=Math.floor(Date.now()/1000)+3600;
+    const reservationId=await reserveInventory(env.ORDERS,cart,expiresAt);
+    const params=new URLSearchParams();params.set('mode','payment');params.set('success_url',origin+'/success/?session_id={CHECKOUT_SESSION_ID}');params.set('cancel_url',origin+'/cancel/');params.set('customer_creation','always');params.set('payment_method_types[0]','card');params.set('metadata[store]','chris-dean-books');params.set('metadata[reservation_id]',reservationId);params.set('expires_at',String(expiresAt));if(env.STRIPE_TAX_ENABLED==='true')params.set('automatic_tax[enabled]','true');
     cart.forEach((entry,i)=>{params.set(`line_items[${i}][price]`,priceId(env,entry.sku));params.set(`line_items[${i}][quantity]`,String(entry.quantity));});
     if(hasPhysical){
       params.set('shipping_address_collection[allowed_countries][0]','AU');
@@ -19,8 +23,33 @@ export async function onRequestPost({request,env}){
       params.set('shipping_options[0][shipping_rate_data][fixed_amount][amount]',String(shipping.cents));
       params.set('shipping_options[0][shipping_rate_data][display_name]',shipping.displayName);
     }
-    const result=await fetch('https://api.stripe.com/v1/checkout/sessions',{method:'POST',headers:{Authorization:'Bearer '+env.STRIPE_SECRET_KEY,'Content-Type':'application/x-www-form-urlencoded'},body:params.toString()});const data=await result.json();if(!result.ok||!data.url)throw Error(data.error?.message||'Stripe Checkout could not start');
-    if(new URL(data.url).hostname!=='checkout.stripe.com')throw Error('Unexpected checkout destination');
-    return json({url:data.url});
-  }catch(e){console.error('Checkout issue:',e.message);return json({error:/Invalid cart|Maximum quantity/.test(e.message)?e.message:'Checkout could not be started. Please try again or contact the author.'},/Invalid cart|Maximum quantity/.test(e.message)?400:500);}
+    let session;
+    try{
+      const result=await fetch('https://api.stripe.com/v1/checkout/sessions',{
+        method:'POST',
+        headers:{Authorization:'Bearer '+env.STRIPE_SECRET_KEY,'Content-Type':'application/x-www-form-urlencoded','Idempotency-Key':reservationId},
+        body:params.toString()
+      });
+      session=await result.json();
+      if(!result.ok||!session?.url||!/^cs_[a-zA-Z0-9_]+$/.test(session.id||''))throw Error('Stripe Checkout could not start');
+      if(new URL(session.url).hostname!=='checkout.stripe.com')throw Error('Unexpected checkout destination');
+    }catch(e){
+      await releaseInventory(env.ORDERS,reservationId);
+      throw e;
+    }
+    try{await attachCheckoutSession(env.ORDERS,reservationId,session.id);}
+    catch(error){
+      // Do not hand out a payment URL unless its stock reservation was saved.
+      // Ask Stripe to expire the session before releasing inventory. On failure,
+      // keep stock reserved for manual investigation or Stripe's expiry event.
+      try{
+        const expired=await fetch('https://api.stripe.com/v1/checkout/sessions/'+encodeURIComponent(session.id)+'/expire',{
+          method:'POST',headers:{Authorization:'Bearer '+env.STRIPE_SECRET_KEY}
+        });
+        if(expired.ok)await releaseInventory(env.ORDERS,reservationId,session.id);
+      }catch(e){console.error('Unable to expire orphaned checkout session',e.name);}
+      throw error;
+    }
+    return json({url:session.url});
+  }catch(e){console.error('Checkout issue:',e.name);const invalid=/Invalid cart|Maximum quantity/.test(e.message);return json({error:e instanceof StockUnavailableError?e.message:invalid?e.message:'Checkout could not be started. Please try again or contact the author.'},e instanceof StockUnavailableError?409:invalid?400:503);}
 }
