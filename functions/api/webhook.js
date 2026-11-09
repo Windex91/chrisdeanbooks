@@ -1,14 +1,24 @@
-import {verifyStripeSignature,json,lineItems,purchasedSkus,siteUrl,sendResend,escapeHtml} from '../../lib/commerce.js';
+import {verifyStripeSignature,json,lineItems,purchasedSkus,siteUrl,sendResend,escapeHtml,settleInventory,releaseInventory} from '../../lib/commerce.js';
 export async function onRequestPost({request,env}){
   if(!env.STRIPE_WEBHOOK_SECRET||!env.ORDERS)return json({error:'Webhook is not configured'},503);
   const payload=await request.text();if(payload.length>100000)return json({error:'Payload too large'},413);
   if(!(await verifyStripeSignature(payload,request.headers.get('stripe-signature'),env.STRIPE_WEBHOOK_SECRET)))return json({error:'Invalid webhook signature'},400);
-  const event=JSON.parse(payload);if(!['checkout.session.completed','checkout.session.async_payment_succeeded'].includes(event.type))return json({received:true});
-  const session=event.data?.object;if(session?.payment_status!=='paid'||session.mode!=='payment')return json({received:true});
+  let event;
+  try{event=JSON.parse(payload);}catch{return json({error:'Invalid event JSON'},400);}
+  if(!['checkout.session.completed','checkout.session.async_payment_succeeded','checkout.session.expired'].includes(event.type))return json({received:true});
+  const session=event.data?.object;
+  if(!session?.id||session?.metadata?.store!=='chris-dean-books'||!session?.metadata?.reservation_id)return json({error:'Unknown reservation'},400);
+  if(event.type==='checkout.session.expired'){
+    try{await releaseInventory(env.ORDERS,session.metadata.reservation_id,session.id);return json({received:true});}
+    catch(error){console.error('Inventory expiry webhook failed:',error.name);return json({error:'Failed to release held stock'},500);}
+  }
+  if(session?.payment_status!=='paid'||session.mode!=='payment')return json({received:true});
   try{
     const lines=await lineItems(env,session.id),items=purchasedSkus(env,lines);if(!items.length)throw Error('Paid session contains no recognised products');
     const email=session.customer_details?.email||session.customer_email;if(!email)throw Error('Missing customer email');
     const address=session.collected_information?.shipping_details||session.shipping_details||null;
+    // Confirm stock exactly once before notification; retries cannot consume it twice.
+    await settleInventory(env.ORDERS,session.metadata.reservation_id,session.id);
     await env.ORDERS.prepare('INSERT OR IGNORE INTO orders (session_id, email, items_json, shipping_json) VALUES (?, ?, ?, ?)').bind(session.id,email,JSON.stringify(items),JSON.stringify(address)).run();
     const row=await env.ORDERS.prepare('SELECT customer_notified, owner_notified FROM orders WHERE session_id = ?').bind(session.id).first();
     const safeName=escapeHtml(session.customer_details?.name||'reader');const orderUrl=siteUrl(env)+'/success/?session_id='+encodeURIComponent(session.id);
