@@ -14,18 +14,30 @@
   function toast(message){const el=$('#toast');if(!el)return;el.textContent=message;el.classList.add('show');clearTimeout(toast._timer);toast._timer=setTimeout(()=>el.classList.remove('show'),3000);}
   function openCart(){document.body.classList.add('cart-open');$('.cart-drawer')?.setAttribute('aria-hidden','false');$('.cart-drawer .icon-button')?.focus();}
   function closeCart(){document.body.classList.remove('cart-open');$('.cart-drawer')?.setAttribute('aria-hidden','true');$('.cart-toggle')?.focus();}
-  function add(sku){if(!available(sku))return;cart[sku]=Math.min((cart[sku]||0)+1,STORE.products[sku].maxQuantity);save();openCart();toast('Added to your book bag');}
+  const physicalCount=()=>Object.entries(cart).reduce((n,[sku,q])=>n+(sku.endsWith('-paperback')?q:0),0);
+  function add(sku){
+    if(!available(sku))return;
+    if(sku.endsWith('-paperback')&&physicalCount()>=5){toast('Limit: five paperbacks per order');return;}
+    cart[sku]=Math.min((cart[sku]||0)+1,STORE.products[sku].maxQuantity);
+    save();openCart();toast('Added to your book bag');
+  }
   function renderCart(){sanitize();const count=Object.values(cart).reduce((a,b)=>a+b,0);$$('.cart-count').forEach(el=>el.textContent=String(count));const items=$('#cart-items');if(!items)return;
     if(!count){items.innerHTML='<div class="empty-cart">Your book bag is empty.<br>There are worlds waiting to be discovered.</div>';}
     else items.innerHTML=Object.entries(cart).map(([sku,q])=>{const p=STORE.products[sku];return `<div class="cart-item"><img src="${p.image}" alt="${p.title} cover"><div><h3>${p.title}</h3><span class="kind">${p.format}</span><div class="qty-row"><button data-qty="${sku}" data-delta="-1" aria-label="Remove one ${p.format}">−</button><span>${q}</span><button data-qty="${sku}" data-delta="1" aria-label="Add one ${p.format}" ${q>=p.maxQuantity?'disabled':''}>+</button><button class="remove-item" data-remove="${sku}">Remove</button></div></div><strong class="price">${money(p.price*q)}</strong></div>`;}).join('');
     $('#cart-subtotal').textContent=money(Object.entries(cart).reduce((sum,[sku,q])=>sum+STORE.products[sku].price*q,0));
-    const checkout=$('#checkout-button');checkout.disabled=!count||!STORE.live||!pricesReady;checkout.style.opacity=(!count||!STORE.live||!pricesReady)?'.52':'1';checkout.style.cursor=(!count||!STORE.live||!pricesReady)?'not-allowed':'pointer';$('#checkout-note').textContent=!STORE.live?'Secure checkout is being tested. No online orders are accepted yet.':!pricesReady?'Loading verified prices from our payment provider…':!count?'Add a book to continue.':'';
+    const checkout=$('#checkout-button');checkout.disabled=!count||!STORE.live||!pricesReady;checkout.style.opacity=(!count||!STORE.live||!pricesReady)?'.52':'1';checkout.style.cursor=(!count||!STORE.live||!pricesReady)?'not-allowed':'pointer';$('#checkout-note').textContent=(!STORE.live?'Secure checkout is being tested. No online orders are accepted yet.':!pricesReady?'Loading verified prices from our payment provider…':!count?'Add a book to continue.':'')+
+      (count?(physicalCount()?' Estimated Australia-wide standard postage: '+money(physicalCount()===1?1295:physicalCount()<=3?1695:2195)+'.':' Ebooks: no postage charge.'):'');
   }
   document.addEventListener('click',e=>{
     const addButton=e.target.closest('[data-add]');if(addButton){add(addButton.dataset.add);return;}
     const selected=e.target.closest('[data-add-selected]');if(selected){const active=$('.edition.selected');if(active)add(active.dataset.edition);return;}
     const edition=e.target.closest('[data-edition]');if(edition){$('.edition').forEach(el=>{el.classList.toggle('selected',el===edition);el.setAttribute('aria-pressed',String(el===edition));});return;}
-    const qty=e.target.closest('[data-qty]');if(qty){const sku=qty.dataset.qty;cart[sku]=Math.min(STORE.products[sku].maxQuantity,(cart[sku]||0)+Number(qty.dataset.delta));if(cart[sku]<=0)delete cart[sku];save();return;}
+    const qty=e.target.closest('[data-qty]');if(qty){
+      const sku=qty.dataset.qty,delta=Number(qty.dataset.delta);
+      if(delta>0&&sku.endsWith('-paperback')&&physicalCount()>=5){toast('Limit: five paperbacks per order');return;}
+      cart[sku]=Math.min(STORE.products[sku].maxQuantity,(cart[sku]||0)+delta);
+      if(cart[sku]<=0)delete cart[sku];save();return;
+    }
     const remove=e.target.closest('[data-remove]');if(remove){delete cart[remove.dataset.remove];save();return;}
     if(e.target.closest('[data-open-cart],.cart-toggle')){openCart();return;}
     if(e.target.closest('[data-close-cart]')){closeCart();return;}

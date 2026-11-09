@@ -14,8 +14,7 @@ STRIPE_PRICE_WILDBORN_EBOOK=price_1UZm32R50HKK3kRTy4xnMW31
 STRIPE_PRICE_THE_GLASS_TAPESTRY_PAPERBACK=price_1UZm35R50HKK3kRTgo4dhVWZ
 STRIPE_PRICE_THE_GLASS_TAPESTRY_EBOOK=price_1UZm37R50HKK3kRTrX4NP8oN
 
-# Create and approve an Australian shipping rate before checkout testing.
-STRIPE_SHIPPING_RATE_AU=shr_REPLACE
+# Shipping tiers for 1–5 paperbacks are set server-side; no shipping-rate ID variable required.
 
 # Private Cloudflare R2 object paths. Never publish EPUB assets under public/.
 R2_BENEATH_FALLING_LEAVES_EBOOK_KEY=ebooks/beneath-falling-leaves.epub

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {ITEMS,cleanCart,verifyStripeSignature,purchasedSkus,ebookKey} from '../lib/commerce.js';
+import {ITEMS,cleanCart,shippingForCart,verifyStripeSignature,purchasedSkus,ebookKey} from '../lib/commerce.js';
 import {onRequestGet as catalog} from '../functions/api/catalog.js';
 import {onRequestPost as checkout} from '../functions/api/checkout.js';
 import {onRequestGet as download} from '../functions/api/download.js';
@@ -25,7 +25,9 @@ test('checkout creates AUD shipping session with server-authorized price',async(
    assert.equal(f.get('line_items[0][price]'),'price_paper');
    assert.equal(f.get('line_items[0][quantity]'),'1');
    assert.equal(f.get('shipping_address_collection[allowed_countries][0]'),'AU');
-   assert.equal(f.get('shipping_options[0][shipping_rate]'),'shr_test');
+   assert.equal(f.get('shipping_options[0][shipping_rate_data][type]'),'fixed_amount');
+   assert.equal(f.get('shipping_options[0][shipping_rate_data][fixed_amount][currency]'),'aud');
+   assert.equal(f.get('shipping_options[0][shipping_rate_data][fixed_amount][amount]'),'1295');
    assert.equal(f.get('success_url'),'https://chrisdeanbooks.com/success/?session_id={CHECKOUT_SESSION_ID}');
    return new Response(JSON.stringify({url:'https://checkout.stripe.com/c/pay/test'}),{status:200});
  };
@@ -103,7 +105,7 @@ test('checkout supports a mixed physical and digital author-book basket',async()
     assert.equal(f.get('line_items[1][price]'),'price_glass_epub');
     assert.equal(f.get('line_items[1][quantity]'),'1');
     assert.equal(f.get('shipping_address_collection[allowed_countries][0]'),'AU');
-    assert.equal(f.get('shipping_options[0][shipping_rate]'),'shr_test');
+    assert.equal(f.get('shipping_options[0][shipping_rate_data][fixed_amount][amount]'),'1695');
     assert.equal(f.has('automatic_tax[enabled]'),false);
     return new Response(JSON.stringify({url:'https://checkout.stripe.com/c/pay/sandbox'}),{status:200});
   };
@@ -120,7 +122,7 @@ test('ebook-only checkout does not charge for shipping',async()=>{
     called=true;
     const f=new URLSearchParams(options.body);
     assert.equal(f.get('line_items[0][price]'),'price_bfl_epub');
-    assert.equal(f.has('shipping_options[0][shipping_rate]'),false);
+    assert.equal(f.has('shipping_options[0][shipping_rate_data][fixed_amount][amount]'),false);
     assert.equal(f.has('shipping_address_collection[allowed_countries][0]'),false);
     return new Response(JSON.stringify({url:'https://checkout.stripe.com/c/pay/sandbox'}),{status:200});
   };
@@ -162,5 +164,40 @@ test('server-side price catalogue validates all six prices against approved cent
     prices.price_bfl_paper.unit_amount=2500;
     const mismatch=await catalog({env});
     assert.equal(mismatch.status,503);
+  }finally{globalThis.fetch=original;}
+});
+
+test('Australian Parcel Post tiers use total paperback quantity',()=>{
+  const cart=items=>cleanCart({items});
+  assert.equal(shippingForCart(cart([{sku:'wildborn-ebook',quantity:1}])),null);
+  assert.equal(shippingForCart(cart([{sku:'wildborn-paperback',quantity:1}])).cents,1295);
+  assert.equal(shippingForCart(cart([{sku:'wildborn-paperback',quantity:2}])).cents,1695);
+  assert.equal(shippingForCart(cart([{sku:'wildborn-paperback',quantity:3},{sku:'the-glass-tapestry-ebook',quantity:1}])).cents,1695);
+  assert.equal(shippingForCart(cart([{sku:'wildborn-paperback',quantity:2},{sku:'beneath-falling-leaves-paperback',quantity:2}])).cents,2195);
+  assert.equal(shippingForCart(cart([{sku:'wildborn-paperback',quantity:5}])).cents,2195);
+  assert.throws(()=>cart([{sku:'wildborn-paperback',quantity:4},{sku:'beneath-falling-leaves-paperback',quantity:2}]),/Maximum quantity/);
+});
+
+test('4 paperback Checkout Session uses the large parcel tier',async()=>{
+  const original=globalThis.fetch;
+  globalThis.fetch=async(url,options)=>{
+    const f=new URLSearchParams(options.body);
+    assert.equal(f.get('shipping_options[0][shipping_rate_data][fixed_amount][amount]'),'2195');
+    assert.equal(f.get('shipping_address_collection[allowed_countries][0]'),'AU');
+    return new Response(JSON.stringify({url:'https://checkout.stripe.com/c/pay/sandbox'}),{status:200});
+  };
+  try{
+    const res=await checkout({request:request('https://chrisdeanbooks.com/api/checkout',{items:[{sku:'wildborn-paperback',quantity:2},{sku:'beneath-falling-leaves-paperback',quantity:2}]}),env});
+    assert.equal(res.status,200);
+  }finally{globalThis.fetch=original;}
+});
+
+test('6 paperbacks are rejected before initiating Stripe checkout',async()=>{
+  const original=globalThis.fetch;
+  globalThis.fetch=async()=>{throw Error('Stripe must not be contacted');};
+  try{
+    const res=await checkout({request:request('https://chrisdeanbooks.com/api/checkout',{items:[{sku:'wildborn-paperback',quantity:4},{sku:'beneath-falling-leaves-paperback',quantity:2}]}),env});
+    assert.equal(res.status,400);
+    assert.match((await res.json()).error,/Maximum quantity/);
   }finally{globalThis.fetch=original;}
 });
