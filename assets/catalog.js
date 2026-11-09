@@ -7,7 +7,7 @@ window.CD_STORE = Object.freeze({
   contactEnabled: false,
   turnstileSiteKey: '',
   products: {
-    'wildborn-paperback': {title:'Wildborn',format:'Paperback',price:2500,image:'/assets/img/wildborn-cover.webp',maxQuantity:5},
-    'wildborn-ebook': {title:'Wildborn',format:'Ebook',price:899,image:'/assets/img/wildborn-cover.webp',maxQuantity:1}
+    'wildborn-paperback': {title:'Wildborn',format:'Paperback',price:2500,image:'/assets/img/wildborn-2026.webp',maxQuantity:5},
+    'wildborn-ebook': {title:'Wildborn',format:'Ebook',price:899,image:'/assets/img/wildborn-2026.webp',maxQuantity:1}
   }
 });
