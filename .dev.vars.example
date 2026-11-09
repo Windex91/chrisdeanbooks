@@ -9,5 +9,5 @@ STRIPE_SHIPPING_RATE_AU=shr_REPLACE
 R2_WILDBORN_EBOOK_KEY=ebooks/wildborn.epub
 RESEND_API_KEY=re_REPLACE
 RESEND_FROM_ADDRESS=Christopher Dean Books <orders@your-verified-domain.com>
-SHOP_OWNER_EMAIL=REPLACE_WITH_OWNER_EMAIL
+SHOP_OWNER_EMAIL=REPLACE_WITH_OWNER_EMAIL\n# Contact form delivery target is fixed in server code: chris@chrisdeanbooks.com\nTURNSTILE_SITE_KEY=REPLACE_WITH_PUBLIC_SITE_KEY
 TURNSTILE_SECRET_KEY=REPLACE

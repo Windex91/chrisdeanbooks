@@ -48,10 +48,38 @@
     }catch(err){box.innerHTML='<h2>Order lookup unavailable</h2><p>'+escapeHtml(err.message||'Please try the original order link again.')+'</p>';}
   }
   function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-  async function setupContact(){const form=$('#contact-form');if(!form)return;if(!STORE.contactEnabled||!STORE.turnstileSiteKey)return;
-    const wrap=$('#turnstile-wrap');wrap.innerHTML=`<div class="cf-turnstile" data-sitekey="${escapeHtml(STORE.turnstileSiteKey)}"></div>`;
-    const scr=document.createElement('script');scr.src='https://challenges.cloudflare.com/turnstile/v0/api.js';scr.async=true;scr.defer=true;document.body.appendChild(scr);const button=$('button[type=submit]',form);button.disabled=false;$('.form-status',form).textContent='';
-    form.addEventListener('submit',async e=>{e.preventDefault();button.disabled=true;const status=$('.form-status',form);status.textContent='Sending…';try{const body=Object.fromEntries(new FormData(form).entries());const res=await fetch('/api/contact',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...body,turnstileToken:body['cf-turnstile-response']})});const data=await res.json();if(!res.ok)throw Error(data.error||'Message could not be sent.');form.reset();status.textContent='Your message has been sent. Thank you!';}catch(err){status.textContent=err.message;}finally{button.disabled=false;if(window.turnstile)window.turnstile.reset();}});
+  async function setupContact(){
+    const form=$('#contact-form');if(!form)return;
+    const status=$('.form-status',form),button=$('button[type=submit]',form);
+    const fallback='The on-page form is not yet available. Please use the direct email link instead.';
+    button.disabled=true;
+    let config;
+    try{
+      const res=await fetch('/api/contact-config',{cache:'no-store'});
+      if(!res.ok)throw Error('Contact service unavailable');
+      config=await res.json();
+      if(config.enabled!==true||typeof config.siteKey!=='string'||!config.siteKey)throw Error('Contact service not configured');
+    }catch{status.textContent=fallback;return;}
+    $('#turnstile-wrap').innerHTML=`<div class="cf-turnstile" data-sitekey="${escapeHtml(config.siteKey)}"></div>`;
+    const scr=document.createElement('script');
+    scr.src='https://challenges.cloudflare.com/turnstile/v0/api.js';scr.async=true;scr.defer=true;
+    scr.onload=()=>{button.disabled=false;status.textContent='Messages will be delivered to chris@chrisdeanbooks.com.';};
+    scr.onerror=()=>{button.disabled=true;status.textContent=fallback;};
+    document.body.appendChild(scr);
+    form.addEventListener('submit',async e=>{
+      e.preventDefault();
+      const body=Object.fromEntries(new FormData(form).entries());
+      const token=body['cf-turnstile-response'];
+      if(!token){status.textContent='Please complete the anti-spam check before sending.';return;}
+      button.disabled=true;status.textContent='Sending your message…';
+      try{
+        const res=await fetch('/api/contact',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...body,turnstileToken:token})});
+        const data=await res.json();
+        if(!res.ok||data.sent!==true)throw Error(data.error||'Your message could not be sent.');
+        form.reset();status.textContent='Message sent to chris@chrisdeanbooks.com. Thank you!';
+      }catch(err){status.textContent=err.message||'Message delivery failed. Please use the direct email link.';}
+      finally{button.disabled=false;if(window.turnstile)window.turnstile.reset();}
+    });
   }
   async function syncLivePrices(){if(!STORE.live)return;try{
     const res=await fetch('/api/catalog',{cache:'no-store'});const data=await res.json();if(!res.ok||!data.products)throw Error(data.error||'Cannot verify prices');

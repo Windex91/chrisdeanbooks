@@ -186,3 +186,15 @@ During current design review, cart buttons and example prices are intentionally 
 - Coming Soon now features My Name is Monster (working on new cover) and Beneath Ash & Dust (sequel to Beneath Falling Leaves).
 - The former title and corresponding old cover assets are deleted from this preview branch. Production main remains unchanged.
 - All payment functionality remains disabled; the catalogue is for design review, not order taking.
+
+
+## Contact form: direct delivery to chris@chrisdeanbooks.com
+
+The Contact page includes a public **mailto:chris@chrisdeanbooks.com** link, which works immediately for visitors with an email app. The in-page form posts to the Cloudflare Pages Function `/api/contact`. The recipient is fixed on the server as `chris@chrisdeanbooks.com` (not set by user input), and the sender email is set as Reply-To. The contact form is **independent of the bookshop** and stays disabled until the following are configured **separately for the relevant Cloudflare Pages environment**:
+
+1. Verify a sending domain at [Resend](https://resend.com/domains) and create a private API key. To avoid disrupting existing incoming email/MX settings, consider using a verified subdomain (for example, `mail.chrisdeanbooks.com`).
+2. Cloudflare Pages → the chosen project → Settings → Variables and Secrets: add `RESEND_API_KEY` (encrypted secret) and `RESEND_FROM_ADDRESS` (for example, `Christopher Dean Books <website@mail.chrisdeanbooks.com>`, using your actual verified sending domain).
+3. Create a [Cloudflare Turnstile](https://dash.cloudflare.com/?to=/:account/turnstile) widget, with your live and preview site hostnames permitted. Add `TURNSTILE_SECRET_KEY` (encrypted secret) and `TURNSTILE_SITE_KEY` (public variable) to that Pages environment. There is no need to edit `assets/catalog.js` to enable the form; the browser calls `/api/contact-config` and enables it only when the server reports everything ready.
+4. Redeploy the preview, submit a genuine test message and **verify receipt** in `chris@chrisdeanbooks.com` before treating email as working. Repeat secrets/settings on the production Pages environment when the main site is approved. **Do not commit API keys or paste them into the public website files.**
+
+No checkout or Stripe configuration is required for the contact form. The anti-spam verification must succeed and the Turnstile hostname must match the request host. If sending is not configured, the on-page form is disabled and the direct email link remains available. The `RESEND_FROM_ADDRESS` identity is used for outbound delivery; `chris@chrisdeanbooks.com` is the receiving address and must have a working inbox or forwarding configuration with your mail provider.
