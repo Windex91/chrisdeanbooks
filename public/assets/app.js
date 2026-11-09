@@ -19,12 +19,12 @@
     if(!count){items.innerHTML='<div class="empty-cart">Your book bag is empty.<br>There are worlds waiting to be discovered.</div>';}
     else items.innerHTML=Object.entries(cart).map(([sku,q])=>{const p=STORE.products[sku];return `<div class="cart-item"><img src="${p.image}" alt="${p.title} cover"><div><h3>${p.title}</h3><span class="kind">${p.format}</span><div class="qty-row"><button data-qty="${sku}" data-delta="-1" aria-label="Remove one ${p.format}">−</button><span>${q}</span><button data-qty="${sku}" data-delta="1" aria-label="Add one ${p.format}" ${q>=p.maxQuantity?'disabled':''}>+</button><button class="remove-item" data-remove="${sku}">Remove</button></div></div><strong class="price">${money(p.price*q)}</strong></div>`;}).join('');
     $('#cart-subtotal').textContent=money(Object.entries(cart).reduce((sum,[sku,q])=>sum+STORE.products[sku].price*q,0));
-    const checkout=$('#checkout-button');checkout.disabled=!count||!STORE.live||!pricesReady;checkout.style.opacity=(!count||!STORE.live||!pricesReady)?'.52':'1';checkout.style.cursor=(!count||!STORE.live||!pricesReady)?'not-allowed':'pointer';$('#checkout-note').textContent=!STORE.live?'Store preview: checkout is disabled until final prices and Stripe are connected.':!pricesReady?'Loading verified prices from our payment provider…':!count?'Add a book to continue.':'';
+    const checkout=$('#checkout-button');checkout.disabled=!count||!STORE.live||!pricesReady;checkout.style.opacity=(!count||!STORE.live||!pricesReady)?'.52':'1';checkout.style.cursor=(!count||!STORE.live||!pricesReady)?'not-allowed':'pointer';$('#checkout-note').textContent=!STORE.live?'Secure checkout is being tested. No online orders are accepted yet.':!pricesReady?'Loading verified prices from our payment provider…':!count?'Add a book to continue.':'';
   }
   document.addEventListener('click',e=>{
     const addButton=e.target.closest('[data-add]');if(addButton){add(addButton.dataset.add);return;}
     const selected=e.target.closest('[data-add-selected]');if(selected){const active=$('.edition.selected');if(active)add(active.dataset.edition);return;}
-    const edition=e.target.closest('[data-edition]');if(edition){$$('.edition').forEach(el=>el.classList.toggle('selected',el===edition));return;}
+    const edition=e.target.closest('[data-edition]');if(edition){$('.edition').forEach(el=>{el.classList.toggle('selected',el===edition);el.setAttribute('aria-pressed',String(el===edition));});return;}
     const qty=e.target.closest('[data-qty]');if(qty){const sku=qty.dataset.qty;cart[sku]=Math.min(STORE.products[sku].maxQuantity,(cart[sku]||0)+Number(qty.dataset.delta));if(cart[sku]<=0)delete cart[sku];save();return;}
     const remove=e.target.closest('[data-remove]');if(remove){delete cart[remove.dataset.remove];save();return;}
     if(e.target.closest('[data-open-cart],.cart-toggle')){openCart();return;}
