@@ -1,0 +1,34 @@
+CHRISTOPHER DEAN BOOKS — WEBSITE BUILD (NOVEMBER 2026)
+
+This is the complete first version of your cinematic author site.
+
+WHAT YOU HAVE:
+- Responsive homepage and book-poster library
+- Wildborn page + shop with paperback/ebook demo selections
+- His Name Was Monster coming-soon book page
+- About, contact, order confirmation, cancellation, policy draft pages
+- Shopping bag + server-side Stripe checkout integration
+- Secure R2 ebook download and author order-notification structure
+
+IMPORTANT:
+This is a PREVIEW build, not a live shop. The book prices shown (A$25
+paperback, A$8.99 ebook) are examples. No orders can be charged until
+Stripe, shipping, private EPUB storage and your approved policies are
+configured. The official Wildborn blurb also needs final sign-off.
+
+SEE THE DESIGN:
+Open the separate file 'Christopher-Dean-Website-Preview.html' in your
+browser, or see the screenshot files included alongside your download.
+The standalone preview is homepage-only; the ZIP has the full website.
+
+RUN THE FULL SITE:
+From the ZIP's extracted folder, run:
+  python -m http.server 4173 -d public
+Then visit: http://localhost:4173
+
+DEPLOY / ACTIVATE CHECKOUT:
+Read README.md for the complete step-by-step Cloudflare, Stripe, R2,
+D1 and Resend configuration.
+
+Do not put secret API keys or unpublished ebook files into the public/
+folder or a public GitHub repository.

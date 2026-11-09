@@ -1,0 +1,13 @@
+{
+  "name": "christopher-dean-books",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler pages dev public --compatibility-date=2026-11-09",
+    "test": "node --test tests/*.test.js",
+    "deploy": "wrangler pages deploy public",
+    "preview": "python -m http.server 4173 -d public"
+  },
+  "devDependencies": {"wrangler":"^4.0.0"}
+}

@@ -1,0 +1,13 @@
+# Rename to wrangler.toml and use actual IDs after creating Cloudflare resources.
+name = "chrisdeanbooks"
+pages_build_output_dir = "./public"
+compatibility_date = "2026-11-09"
+
+[[d1_databases]]
+binding = "ORDERS"
+database_name = "chris-dean-orders"
+database_id = "YOUR_REAL_D1_DATABASE_ID"
+
+[[r2_buckets]]
+binding = "EBOOKS"
+bucket_name = "chris-dean-private-ebooks"
