@@ -20,3 +20,7 @@
 .author-photo{max-height:425px;width:85%;aspect-ratio:1;object-fit:cover;border:1px solid #9c7e51;box-shadow:0 15px 36px #0008}
 @media(max-width:900px){.library-row,.library-row--reverse{grid-template-columns:1fr;gap:36px;padding:35px}.library-row--reverse .library-cover{order:0}.library-cover img{max-height:420px}}
 @media(max-width:530px){.library-rows{padding:35px 5vw 65px;gap:22px}.library-row{padding:24px 18px}.library-copy h2{font-size:46px}.library-copy h3{font-size:28px}.library-copy p:not(.eyebrow){font-size:12px}.library-cover img{max-height:350px}.library-coming{gap:19px;margin-bottom:55px}.library-coming img{width:29%;}.library-coming h2{font-size:31px}.library-coming p:not(.eyebrow){font-size:12px}.detail-title{font-size:51px!important}}
+
+/* Design review: keep all direct sales controls and unapproved demonstration prices out of the public preview until the user approves the store. */
+.cart-toggle,.shop-price,.shop-card [data-add],.edition-picker,.cart-backdrop,.cart-drawer{display:none!important}
+.shop-card--pending .btn{display:inline-flex}

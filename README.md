@@ -174,3 +174,5 @@ Made for Christopher Dean Books, November 2026. All original book art belongs to
 The preview now includes **Beneath Falling Leaves**, **Wildborn** and **The Glass Tapestry**, using the official pre-existing covers and author portrait. Each has a cinematic tile and an editorial description page. *His Name Was Monster* remains in Coming Soon. Real purchasing, pricing and fulfilment are deferred until visual review. The production branch is untouched.
 
 Frontend pages have canonical copies at the repository root, which are mirrored to public/ for either Cloudflare Pages configuration. Run python generate_pages.py after changes to synchronise the static pages and assets. Cloudflare projects chrisdeanbooks and christopherdeanbooks both deploy the preview branch; prefer the first as the future canonical project subject to verifying the domain binding in Cloudflare.
+
+During current design review, cart buttons and example prices are intentionally hidden with an override in assets/style.css. Payment endpoints are still locked. Restore the storefront controls only after user approval and secure configuration.
