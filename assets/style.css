@@ -34,3 +34,11 @@
 .library-row--adult{background:linear-gradient(125deg,#271417,#151215 67%,#231815)}.library-row--adult h3{color:#f0af86!important}.detail-title{line-height:1.03!important}.adult-notice{border-left:3px solid #bd5542;background:#53261e3d;padding:18px 22px;margin:21px 0}.adult-notice strong{font-size:12px;letter-spacing:.12em;color:#ffb4a0}.adult-notice p{margin:8px 0 0!important;color:#e2b6ac!important}.preorder-info{padding:20px 24px;margin:24px 0;border:1px solid #78593a;background:#231c17}.preorder-info strong{display:block;color:#f4ece0;margin-top:6px}.preorder-info p{margin:7px 0 0!important;color:#c0bcb4!important}
 @media(max-width:850px){.soon-grid{grid-template-columns:1fr}.upcoming-entry{grid-template-columns:140px 1fr;gap:30px;padding:28px}.upcoming-emblem{height:170px}}
 @media(max-width:580px){.soon-preview{padding:30px 5vw 70px}.soon-preview-heading{flex-direction:column;align-items:flex-start}.soon-card{min-height:180px;padding:23px}.upcoming-entry{grid-template-columns:1fr;padding:25px}.upcoming-emblem{height:145px}.upcoming-entry h2{font-size:47px}}
+
+/* Meet the Author — full-size author portrait replacing the gold logo */
+.about-mark--portrait{height:440px;overflow:hidden;justify-content:flex-end;isolation:isolate;background:#0b0c0d;border-color:#695740}
+.about-mark--portrait img{position:absolute;inset:0;display:block;width:100%;height:100%;max-width:none;max-height:none;object-fit:cover;object-position:center 37%;filter:contrast(1.04)}
+.about-mark--portrait:before{content:"";position:absolute;inset:0;z-index:1;background:linear-gradient(to top,rgba(4,5,7,.87),transparent 38%);pointer-events:none}
+.about-mark--portrait:after{inset:16px;border-color:#bda0776b;z-index:2;pointer-events:none}
+.about-mark--portrait>span{position:relative;z-index:3;margin:0 0 36px;font-size:10px;color:#eedcc1;text-shadow:0 2px 12px #000}
+@media(max-width:700px){.about-mark--portrait{height:390px}}
