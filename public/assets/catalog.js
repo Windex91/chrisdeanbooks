@@ -1,8 +1,8 @@
 /* Approved display prices in Australian cents. Sandbox Stripe Price IDs remain
    on the server; never put Stripe secret keys in public browser files.
-   Real checkout is OFF until payments, shipping, R2 downloads, D1 and email pass tests. */
+   This experimental development branch uses Stripe SANDBOX ONLY. Do not merge live=true into Production. */
 window.CD_STORE = Object.freeze({
-  live: false,
+  live: true,
   currency: 'AUD',
   products: {
     'beneath-falling-leaves-paperback': {title:'Beneath Falling Leaves',format:'Paperback',price:2499,image:'/assets/img/beneath-falling-leaves-2026.webp',maxQuantity:5},
