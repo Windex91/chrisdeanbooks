@@ -4,6 +4,8 @@ import {ITEMS,cleanCart,shippingForCart,verifyStripeSignature,purchasedSkus,eboo
 import {onRequestGet as catalog} from '../functions/api/catalog.js';
 import {onRequestPost as checkout} from '../functions/api/checkout.js';
 import {onRequestGet as download} from '../functions/api/download.js';
+import {onRequestGet as order} from '../functions/api/order.js';
+import {createEbookAccess,verifyEbookAccess} from '../lib/access.js';
 
 // Transactional in-memory D1 facade for checkout/stock concurrency unit tests.
 // Real D1 migration and cross-request concurrency must ALSO be verified before launch.
@@ -95,7 +97,7 @@ function makeOrders(){
 }
 
 const request=(url,body,headers={})=>new Request(url,{method:'POST',headers:{'content-type':'application/json',...headers},body:JSON.stringify(body)});
-const env={SHOP_ENABLED:'true',SITE_URL:'https://chrisdeanbooks.com',STRIPE_SECRET_KEY:'sk_test_dummy',STRIPE_WEBHOOK_SECRET:'whsec_dummy',RESEND_API_KEY:'re_dummy',RESEND_FROM_ADDRESS:'orders@example.com',SHOP_OWNER_EMAIL:'author@example.com',ORDERS:makeOrders(),EBOOKS:{head:async()=>({})},STRIPE_PRICE_WILDBORN_PAPERBACK:'price_paper',STRIPE_PRICE_WILDBORN_EBOOK:'price_ebook',STRIPE_PRICE_BENEATH_FALLING_LEAVES_PAPERBACK:'price_bfl_paper',STRIPE_PRICE_BENEATH_FALLING_LEAVES_EBOOK:'price_bfl_epub',STRIPE_PRICE_THE_GLASS_TAPESTRY_PAPERBACK:'price_glass_paper',STRIPE_PRICE_THE_GLASS_TAPESTRY_EBOOK:'price_glass_epub',STRIPE_SHIPPING_RATE_AU:'shr_test'};
+const env={SHOP_ENABLED:'true',SITE_URL:'https://chrisdeanbooks.com',STRIPE_SECRET_KEY:'sk_test_dummy',DOWNLOAD_TOKEN_SECRET:'test_signing_secret_012345678901234567890abcde',STRIPE_WEBHOOK_SECRET:'whsec_dummy',RESEND_API_KEY:'re_dummy',RESEND_FROM_ADDRESS:'orders@example.com',SHOP_OWNER_EMAIL:'author@example.com',ORDERS:makeOrders(),EBOOKS:{head:async()=>({})},STRIPE_PRICE_WILDBORN_PAPERBACK:'price_paper',STRIPE_PRICE_WILDBORN_EBOOK:'price_ebook',STRIPE_PRICE_BENEATH_FALLING_LEAVES_PAPERBACK:'price_bfl_paper',STRIPE_PRICE_BENEATH_FALLING_LEAVES_EBOOK:'price_bfl_epub',STRIPE_PRICE_THE_GLASS_TAPESTRY_PAPERBACK:'price_glass_paper',STRIPE_PRICE_THE_GLASS_TAPESTRY_EBOOK:'price_glass_epub',STRIPE_SHIPPING_RATE_AU:'shr_test'};
 beforeEach(()=>{env.ORDERS=makeOrders();});
 
 test('cart rejects price tampering and unknown products',()=>{
@@ -141,19 +143,55 @@ test('download refuses a session without a purchased ebook',async()=>{
  const original=globalThis.fetch;
  globalThis.fetch=async(url)=>{
   if(url.includes('/line_items'))return new Response(JSON.stringify({data:[{price:{id:'price_paper'},quantity:1}]}));
-  return new Response(JSON.stringify({id:'cs_test_abcdefghijk',mode:'payment',payment_status:'paid',metadata:{store:'chris-dean-books'}}));
+  return new Response(JSON.stringify({id:'cs_test_abcdefghijk',mode:'payment',payment_status:'paid',created:Math.floor(Date.now()/1000),metadata:{store:'chris-dean-books'}}));
  };
- try{const res=await download({request:new Request('https://chrisdeanbooks.com/api/download?session_id=cs_test_abcdefghijk&sku=wildborn-ebook'),env});assert.equal(res.status,403);}
- finally{globalThis.fetch=original;}
+ try{
+  const token=await createEbookAccess(env,{id:'cs_test_abcdefghijk',created:Math.floor(Date.now()/1000)});
+  const res=await download({request:new Request('https://chrisdeanbooks.com/api/download?access='+encodeURIComponent(token)+'&sku=wildborn-ebook'),env});
+  assert.equal(res.status,403);
+ }finally{globalThis.fetch=original;}
 });
 test('download serves only the purchased private R2 ebook',async()=>{
  const original=globalThis.fetch;
  globalThis.fetch=async(url)=>{
   if(url.includes('/line_items'))return new Response(JSON.stringify({data:[{price:{id:'price_ebook'},quantity:1}]}));
-  return new Response(JSON.stringify({id:'cs_test_abcdefghijk',mode:'payment',payment_status:'paid',metadata:{store:'chris-dean-books'}}));
+  return new Response(JSON.stringify({id:'cs_test_abcdefghijk',mode:'payment',payment_status:'paid',created:Math.floor(Date.now()/1000),metadata:{store:'chris-dean-books'}}));
  };
- try{const res=await download({request:new Request('https://chrisdeanbooks.com/api/download?session_id=cs_test_abcdefghijk&sku=wildborn-ebook'),env:{...env,EBOOKS:{get:async()=>({body:new Blob(['ebook content'])})}}});assert.equal(res.status,200);assert.equal(await res.text(),'ebook content');assert.match(res.headers.get('Content-Disposition'),/Wildborn.epub/);}
- finally{globalThis.fetch=original;}
+ try{
+  const token=await createEbookAccess(env,{id:'cs_test_abcdefghijk',created:Math.floor(Date.now()/1000)});
+  const res=await download({request:new Request('https://chrisdeanbooks.com/api/download?access='+encodeURIComponent(token)+'&sku=wildborn-ebook'),env:{...env,EBOOKS:{get:async()=>({body:new Blob(['ebook content'])})}}});
+  assert.equal(res.status,200);
+  assert.equal(await res.text(),'ebook content');
+  assert.match(res.headers.get('Content-Disposition'),/Wildborn.epub/);
+ }finally{globalThis.fetch=original;}
+});
+test('bare Stripe session IDs cannot claim ebook downloads',async()=>{
+  const res=await download({request:new Request('https://chrisdeanbooks.com/api/download?session_id=cs_test_abcdefghijk&sku=wildborn-ebook'),env});
+  assert.equal(res.status,403);
+});
+test('signed ebook links expire, reject tampering, and cannot be reused with another signing key',async()=>{
+  const now=Math.floor(Date.now()/1000);
+  const good=await createEbookAccess(env,{id:'cs_test_abcdefghijk',created:now});
+  assert.equal(await verifyEbookAccess(env,good),'cs_test_abcdefghijk');
+  assert.equal(await verifyEbookAccess(env,good.slice(0,-1)+(good.endsWith('0')?'1':'0')),null);
+  assert.equal(await verifyEbookAccess({...env,DOWNLOAD_TOKEN_SECRET:'other_good_secret_012345678901234567890abc'},good),null);
+  const expired=await createEbookAccess(env,{id:'cs_test_abcdefghijk',created:now-8*86400});
+  assert.equal(await verifyEbookAccess(env,expired),null);
+});
+test('public order redirect cannot enumerate purchased book titles',async()=>{
+  const original=globalThis.fetch;let linesAccessed=false;
+  globalThis.fetch=async(url)=>{
+    if(url.includes('/line_items')){linesAccessed=true;throw Error('No line items for public redirect');}
+    return new Response(JSON.stringify({id:'cs_test_abcdefghijk',mode:'payment',payment_status:'paid',metadata:{store:'chris-dean-books'}}));
+  };
+  try{
+    const res=await order({request:new Request('https://chrisdeanbooks.com/api/order?session_id=cs_test_abcdefghijk'),env});
+    assert.equal(res.status,200);
+    const data=await res.json();
+    assert.equal(data.requiresEmailLink,true);
+    assert.deepEqual(data.downloads,[]);
+    assert.equal(linesAccessed,false);
+  }finally{globalThis.fetch=original;}
 });
 
 test('all six author editions have approved prices and correct delivery formats',()=>{
