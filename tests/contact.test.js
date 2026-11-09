@@ -26,9 +26,9 @@ function request(body=payload,origin=site){
 }
 
 test('contact config keeps form disabled until mail and anti-spam secrets exist',async()=>{
-  const off=await config({env:{}});
+  const off=await config({env:{},request:new Request(site+'/api/contact-config')});
   assert.deepEqual(await off.json(),{enabled:false,siteKey:null});
-  const on=await config({env});
+  const on=await config({env,request:new Request(site+'/api/contact-config')});
   assert.deepEqual(await on.json(),{enabled:true,siteKey:'test_site_key'});
 });
 
