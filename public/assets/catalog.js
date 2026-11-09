@@ -9,7 +9,7 @@ window.CD_STORE = Object.freeze({
     'beneath-falling-leaves-ebook': {title:'Beneath Falling Leaves',format:'Ebook (EPUB)',price:299,image:'/assets/img/beneath-falling-leaves-2026.webp',maxQuantity:1},
     'wildborn-paperback': {title:'Wildborn',format:'Paperback',price:1599,image:'/assets/img/wildborn-2026.webp',maxQuantity:5},
     'wildborn-ebook': {title:'Wildborn',format:'Ebook (EPUB)',price:299,image:'/assets/img/wildborn-2026.webp',maxQuantity:1},
-    'the-glass-tapestry-paperback': {title:'The Glass Tapestry',format:'Paperback',price:1599,image:'/assets/img/the-glass-tapestry.jpg',maxQuantity:5},
+    'the-glass-tapestry-paperback': {title:'The Glass Tapestry',format:'Paperback',price:1599,image:'/assets/img/the-glass-tapestry.jpg',maxQuantity:1},
     'the-glass-tapestry-ebook': {title:'The Glass Tapestry',format:'Ebook (EPUB)',price:299,image:'/assets/img/the-glass-tapestry.jpg',maxQuantity:1}
   }
 });

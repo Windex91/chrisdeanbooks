@@ -8,8 +8,8 @@
   let pricesReady=!STORE.live;
   let cart={};
   try { const parsed=JSON.parse(localStorage.getItem(key)||'{}'); if(parsed&&typeof parsed==='object'&&!Array.isArray(parsed))cart=parsed; }catch{}
-  const available=(sku)=>Boolean(STORE.products[sku]);
-  function sanitize(){cart=Object.fromEntries(Object.entries(cart).filter(([k,v])=>available(k)&&Number.isInteger(v)&&v>0).map(([k,v])=>[k,Math.min(v,STORE.products[k].maxQuantity)]));}
+  const available=(sku)=>Boolean(STORE.products[sku]&&(STORE.products[sku].available===undefined||STORE.products[sku].available===null||STORE.products[sku].available>0));
+  function sanitize(){cart=Object.fromEntries(Object.entries(cart).filter(([k,v])=>available(k)&&Number.isInteger(v)&&v>0).map(([k,v])=>[k,Math.min(v,STORE.products[k].maxQuantity)]).filter(([,v])=>v>0));}
   function save(){sanitize();try{localStorage.setItem(key,JSON.stringify(cart))}catch{}renderCart();}
   function toast(message){const el=$('#toast');if(!el)return;el.textContent=message;el.classList.add('show');clearTimeout(toast._timer);toast._timer=setTimeout(()=>el.classList.remove('show'),3000);}
   function openCart(){document.body.classList.add('cart-open');$('.cart-drawer')?.setAttribute('aria-hidden','false');$('.cart-drawer .icon-button')?.focus();}
@@ -95,7 +95,28 @@
   }
   async function syncLivePrices(){if(!STORE.live)return;try{
     const res=await fetch('/api/catalog',{cache:'no-store'});const data=await res.json();if(!res.ok||!data.products)throw Error(data.error||'Cannot verify prices');
-    for(const [sku,p] of Object.entries(STORE.products)){const received=data.products[sku]?.price;if(!Number.isInteger(received)||received<1)throw Error('Missing price: '+sku);p.price=received;}
+    for(const [sku,p] of Object.entries(STORE.products)){
+      const received=data.products[sku]?.price;
+      if(!Number.isInteger(received)||received<1)throw Error('Missing price: '+sku);
+      p.price=received;
+      if(sku.endsWith('-paperback')){
+        const stock=data.products[sku]?.available;
+        if(!Number.isInteger(stock)||stock<0)throw Error('Missing stock: '+sku);
+        p.available=stock;
+        p.maxQuantity=Math.min(p.maxQuantity,stock);
+      }
+    }
+    $('[data-add]').forEach(el=>{
+      if(STORE.products[el.dataset.add]&&!available(el.dataset.add)){el.disabled=true;el.textContent='Sold out';}
+    });
+    $('[data-edition]').forEach(el=>{
+      if(!available(el.dataset.edition)){el.disabled=true;el.setAttribute('aria-disabled','true');}
+    });
+    $('[data-stock-sku]').forEach(el=>{
+      const p=STORE.products[el.dataset.stockSku];
+      if(!p||p.available===undefined||p.available===null)return;
+      el.textContent=p.available===0?'Paperback sold out':p.available===1?'Only one paperback available':p.available+' paperback copies available';
+    });
     $$('[data-edition]').forEach(el=>{const sku=el.dataset.edition;const price=STORE.products[sku];if(price)el.querySelector('strong').textContent=money(price.price);});
     $$('[data-price-sku]').forEach(el=>{const price=STORE.products[el.dataset.priceSku];if(price)el.textContent=money(price.price);});
     $$('.preview-only').forEach(el=>el.hidden=true);
