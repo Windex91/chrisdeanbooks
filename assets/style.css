@@ -2,3 +2,21 @@
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*:before,*:after{animation-duration:.001ms!important;transition-duration:.001ms!important}}
 /* Hero book cover already contains the full title; avoid overlaying it. */
 .hero-caption{display:none}
+
+/* Full catalogue and accessible editorial descriptions */
+@media(min-width:1060px){.book-rail{grid-template-columns:repeat(4,minmax(0,1fr));gap:22px}.tile-art{height:365px}.tile-meta h3{font-size:clamp(24px,2.15vw,31px)}}
+.tile-arrow{display:grid;place-items:center;text-decoration:none}
+.library-all-link{display:inline-block;margin-top:36px}
+.library-rows{max-width:1430px;margin:auto;padding:75px 6vw 100px;display:grid;gap:50px}
+.library-row{display:grid;grid-template-columns:minmax(0,.7fr) minmax(0,1.3fr);align-items:center;gap:8%;background:linear-gradient(135deg,#15191d,#0f1113 65%,#221c17);border:1px solid #6d5a4060;padding:50px}
+.library-row--reverse{grid-template-columns:minmax(0,1.3fr) minmax(0,.7fr)}
+.library-row--reverse .library-cover{order:2}
+.library-cover{display:grid;place-items:center}.library-cover img{display:block;max-width:100%;max-height:545px;object-fit:contain;box-shadow:19px 25px 50px #0009;transition:transform .28s}
+.library-cover a:hover img,.library-cover a:focus-visible img{transform:translateY(-7px)}
+.library-copy h2{font-size:clamp(46px,4.8vw,70px);line-height:1.04;margin:16px 0}.library-copy h3{font:italic 500 clamp(26px,2.5vw,37px)/1.15 var(--serif);color:#d1b284;margin-bottom:24px}
+.library-copy p:not(.eyebrow){font-size:13px;color:#b9bec0;line-height:1.95;margin:0 0 15px}.library-copy .btn{margin-top:18px}
+.library-coming{max-width:1100px;margin:0 auto 100px;border-top:1px solid #5e513e;display:flex;align-items:center;gap:42px;padding:30px 6vw}.library-coming img{max-width:190px;width:25%;max-height:270px;object-fit:contain}.library-coming h2{font-size:clamp(34px,4.3vw,58px);margin:12px 0}.library-coming p:not(.eyebrow){color:#b2b5b6;line-height:1.8}
+.detail-title{font-size:clamp(48px,5.9vw,83px)!important;line-height:1.08!important}.detail-sales-note{margin-top:26px;border-top:1px solid #61503b;padding-top:18px;color:#d3bc94!important}
+.author-photo{max-height:425px;width:85%;aspect-ratio:1;object-fit:cover;border:1px solid #9c7e51;box-shadow:0 15px 36px #0008}
+@media(max-width:900px){.library-row,.library-row--reverse{grid-template-columns:1fr;gap:36px;padding:35px}.library-row--reverse .library-cover{order:0}.library-cover img{max-height:420px}}
+@media(max-width:530px){.library-rows{padding:35px 5vw 65px;gap:22px}.library-row{padding:24px 18px}.library-copy h2{font-size:46px}.library-copy h3{font-size:28px}.library-copy p:not(.eyebrow){font-size:12px}.library-cover img{max-height:350px}.library-coming{gap:19px;margin-bottom:55px}.library-coming img{width:29%;}.library-coming h2{font-size:31px}.library-coming p:not(.eyebrow){font-size:12px}.detail-title{font-size:51px!important}}
