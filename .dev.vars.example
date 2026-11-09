@@ -1,13 +1,32 @@
-# Copy to .dev.vars for LOCAL testing only (never commit actual credentials).
+# LOCAL TESTING ONLY. Never commit the real .dev.vars, API keys or webhook secrets.
+# In Cloudflare Pages, configure these separately for Preview and Production.
 SITE_URL=http://localhost:8788
 SHOP_ENABLED=false
+STRIPE_TAX_ENABLED=false
 STRIPE_SECRET_KEY=sk_test_REPLACE
 STRIPE_WEBHOOK_SECRET=whsec_REPLACE
-STRIPE_PRICE_WILDBORN_PAPERBACK=price_REPLACE
-STRIPE_PRICE_WILDBORN_EBOOK=price_REPLACE
+
+# Six verified sandbox Price IDs: NOT live prices (safe identifiers, not credentials).
+STRIPE_PRICE_BENEATH_FALLING_LEAVES_PAPERBACK=price_1UZm2eR50HKK3kRTNCuWE4oS
+STRIPE_PRICE_BENEATH_FALLING_LEAVES_EBOOK=price_1UZm2yR50HKK3kRTeGNxl68D
+STRIPE_PRICE_WILDBORN_PAPERBACK=price_1UZm30R50HKK3kRTtXAoBY8c
+STRIPE_PRICE_WILDBORN_EBOOK=price_1UZm32R50HKK3kRTy4xnMW31
+STRIPE_PRICE_THE_GLASS_TAPESTRY_PAPERBACK=price_1UZm35R50HKK3kRTgo4dhVWZ
+STRIPE_PRICE_THE_GLASS_TAPESTRY_EBOOK=price_1UZm37R50HKK3kRTrX4NP8oN
+
+# Create and approve an Australian shipping rate before checkout testing.
 STRIPE_SHIPPING_RATE_AU=shr_REPLACE
+
+# Private Cloudflare R2 object paths. Never publish EPUB assets under public/.
+R2_BENEATH_FALLING_LEAVES_EBOOK_KEY=ebooks/beneath-falling-leaves.epub
 R2_WILDBORN_EBOOK_KEY=ebooks/wildborn.epub
+R2_THE_GLASS_TAPESTRY_EBOOK_KEY=ebooks/the-glass-tapestry.epub
+
+# Transactional notifications: currently blocked by Resend 401 validation_error.
 RESEND_API_KEY=re_REPLACE
-RESEND_FROM_ADDRESS=Christopher Dean Books <orders@your-verified-domain.com>
-SHOP_OWNER_EMAIL=REPLACE_WITH_OWNER_EMAIL\n# Contact form delivery target is fixed in server code: chris@chrisdeanbooks.com\nTURNSTILE_SITE_KEY=REPLACE_WITH_PUBLIC_SITE_KEY
-TURNSTILE_SECRET_KEY=REPLACE
+RESEND_FROM_ADDRESS=Christopher Dean Books <website@mail.chrisdeanbooks.com>
+SHOP_OWNER_EMAIL=chris@chrisdeanbooks.com
+
+# Contact form (independent of direct sales).
+TURNSTILE_SITE_KEY=REPLACE_WITH_PUBLIC_SITE_KEY
+TURNSTILE_SECRET_KEY=REPLACE_WITH_PRIVATE_SECRET

@@ -1,3 +1,5 @@
+> **Current Stripe sandbox setup (9 Nov 2026):** Six approved Stripe sandbox products and prices have been created. The [Stripe sandbox setup guide](docs/STRIPE_SANDBOX_SETUP.md) is the authoritative current setup checklist. Some older sections below record earlier design-stage decisions and should not override it. Live checkout remains disabled.
+
 # Christopher Dean Books — cinematic author storefront
 
 A custom, mobile-friendly, Netflix-inspired website and direct-sales storefront for **Christopher Dean Books**. Built for the author's existing **Cloudflare Pages** deployment; no Wordpress, Shopify or monthly website-builder subscription is required. The shop uses **Stripe Checkout**, **Cloudflare Pages Functions**, private **Cloudflare R2** ebook storage, **Cloudflare D1** order records, and **Resend** transactional email.
@@ -5,8 +7,8 @@ A custom, mobile-friendly, Netflix-inspired website and direct-sales storefront 
 ## What is ready now
 
 - Cinematic landing page, animated book displays, responsive layout and mobile navigation.
-- Individual book pages for **Wildborn** and **My Name is Monster**.
-- Wildborn paperback and ebook selector, persistent shopping cart and AU-dollar display.
+- Individual published-book pages for **Beneath Falling Leaves**, **Wildborn**, and **The Glass Tapestry**; My Name is Monster appears under Coming Soon.
+- Paperback and ebook selectors for all three available books, with approved AUD prices and a persistent shopping cart; checkout disabled until testing completes.
 - Coming-soon entries cannot be accidentally purchased.
 - Author biography, contact-form framework, shop, policy drafts, checkout return pages, SEO metadata and sitemap.
 - Secure server-side Stripe Checkout session creation with product/quantity validation.
@@ -171,7 +173,7 @@ Made for Christopher Dean Books, November 2026. All original book art belongs to
 
 ## Published-book library — design stage
 
-The preview now includes **Beneath Falling Leaves**, **Wildborn** and **The Glass Tapestry**, using the official pre-existing covers and author portrait. Each has a cinematic tile and an editorial description page. *My Name is Monster* remains in Coming Soon. Real purchasing, pricing and fulfilment are deferred until visual review. The production branch is untouched.
+The original design-stage preview included **Beneath Falling Leaves**, **Wildborn** and **The Glass Tapestry**, using the official pre-existing covers and author portrait. Each has a cinematic tile and an editorial description page. *My Name is Monster* remains in Coming Soon. Real purchasing, pricing and fulfilment are deferred until visual review. The production branch is untouched.
 
 Frontend pages have canonical copies at the repository root, which are mirrored to public/ for either Cloudflare Pages configuration. Run python generate_pages.py after changes to synchronise the static pages and assets. Cloudflare projects chrisdeanbooks and christopherdeanbooks both deploy the preview branch; prefer the first as the future canonical project subject to verifying the domain binding in Cloudflare.
 
