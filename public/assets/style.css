@@ -22,7 +22,7 @@
 @media(max-width:530px){.library-rows{padding:35px 5vw 65px;gap:22px}.library-row{padding:24px 18px}.library-copy h2{font-size:46px}.library-copy h3{font-size:28px}.library-copy p:not(.eyebrow){font-size:12px}.library-cover img{max-height:350px}.library-coming{gap:19px;margin-bottom:55px}.library-coming img{width:29%;}.library-coming h2{font-size:31px}.library-coming p:not(.eyebrow){font-size:12px}.detail-title{font-size:51px!important}}
 
 /* Design review: keep all direct sales controls and unapproved demonstration prices out of the public preview until the user approves the store. */
-.cart-toggle,.shop-price,.shop-card [data-add],.edition-picker,.cart-backdrop,.cart-drawer{display:none!important}
+body:not(.commerce-ready) .cart-toggle,body:not(.commerce-ready) .shop-price,body:not(.commerce-ready) .shop-card [data-add],body:not(.commerce-ready) .edition-picker,body:not(.commerce-ready) .cart-backdrop,body:not(.commerce-ready) .cart-drawer{display:none!important}
 .shop-card--pending .btn{display:inline-flex}
 
 /* November 2026 catalogue and pre-order */

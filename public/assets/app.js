@@ -5,21 +5,22 @@
   const $$=(sel,root=document)=>Array.from(root.querySelectorAll(sel));
   const money=(cents)=>'A$'+new Intl.NumberFormat('en-AU',{minimumFractionDigits:2,maximumFractionDigits:2}).format(cents/100);
   const key='chris-dean-book-bag-v1';
-  let pricesReady=!STORE.live;
+  let pricesReady=false;
+  let checkoutReady=false;
   let cart={};
   try { const parsed=JSON.parse(localStorage.getItem(key)||'{}'); if(parsed&&typeof parsed==='object'&&!Array.isArray(parsed))cart=parsed; }catch{}
   const available=(sku)=>Boolean(STORE.products[sku]);
-  function sanitize(){cart=Object.fromEntries(Object.entries(cart).filter(([k,v])=>available(k)&&Number.isInteger(v)&&v>0).map(([k,v])=>[k,Math.min(v,STORE.products[k].maxQuantity)]));}
+  function sanitize(){cart=Object.fromEntries(Object.entries(cart).filter(([k,v])=>available(k)&&Number.isInteger(v)&&v>0).map(([k,v])=>[k,Math.min(v,STORE.products[k].maxQuantity)]).filter(([,v])=>v>0));}
   function save(){sanitize();try{localStorage.setItem(key,JSON.stringify(cart))}catch{}renderCart();}
   function toast(message){const el=$('#toast');if(!el)return;el.textContent=message;el.classList.add('show');clearTimeout(toast._timer);toast._timer=setTimeout(()=>el.classList.remove('show'),3000);}
   function openCart(){document.body.classList.add('cart-open');$('.cart-drawer')?.setAttribute('aria-hidden','false');$('.cart-drawer .icon-button')?.focus();}
   function closeCart(){document.body.classList.remove('cart-open');$('.cart-drawer')?.setAttribute('aria-hidden','true');$('.cart-toggle')?.focus();}
-  function add(sku){if(!available(sku))return;cart[sku]=Math.min((cart[sku]||0)+1,STORE.products[sku].maxQuantity);save();openCart();toast('Added to your book bag');}
+  function add(sku){if(!available(sku)||STORE.products[sku].maxQuantity<1)return;cart[sku]=Math.min((cart[sku]||0)+1,STORE.products[sku].maxQuantity);save();openCart();toast('Added to your book bag');}
   function renderCart(){sanitize();const count=Object.values(cart).reduce((a,b)=>a+b,0);$$('.cart-count').forEach(el=>el.textContent=String(count));const items=$('#cart-items');if(!items)return;
     if(!count){items.innerHTML='<div class="empty-cart">Your book bag is empty.<br>There are worlds waiting to be discovered.</div>';}
     else items.innerHTML=Object.entries(cart).map(([sku,q])=>{const p=STORE.products[sku];return `<div class="cart-item"><img src="${p.image}" alt="${p.title} cover"><div><h3>${p.title}</h3><span class="kind">${p.format}</span><div class="qty-row"><button data-qty="${sku}" data-delta="-1" aria-label="Remove one ${p.format}">−</button><span>${q}</span><button data-qty="${sku}" data-delta="1" aria-label="Add one ${p.format}" ${q>=p.maxQuantity?'disabled':''}>+</button><button class="remove-item" data-remove="${sku}">Remove</button></div></div><strong class="price">${money(p.price*q)}</strong></div>`;}).join('');
     $('#cart-subtotal').textContent=money(Object.entries(cart).reduce((sum,[sku,q])=>sum+STORE.products[sku].price*q,0));
-    const checkout=$('#checkout-button');checkout.disabled=!count||!STORE.live||!pricesReady;checkout.style.opacity=(!count||!STORE.live||!pricesReady)?'.52':'1';checkout.style.cursor=(!count||!STORE.live||!pricesReady)?'not-allowed':'pointer';$('#checkout-note').textContent=!STORE.live?'Store preview: checkout is disabled until final prices and Stripe are connected.':!pricesReady?'Loading verified prices from our payment provider…':!count?'Add a book to continue.':'';
+    const checkout=$('#checkout-button');checkout.disabled=!count||!checkoutReady||!pricesReady;checkout.style.opacity=(!count||!checkoutReady||!pricesReady)?'.52':'1';checkout.style.cursor=(!count||!checkoutReady||!pricesReady)?'not-allowed':'pointer';$('#checkout-note').textContent=!checkoutReady?'Checkout will open after payment and delivery testing is complete.':!pricesReady?'Loading verified prices from our payment provider…':!count?'Add a book to continue.':'';
   }
   document.addEventListener('click',e=>{
     const addButton=e.target.closest('[data-add]');if(addButton){add(addButton.dataset.add);return;}
@@ -34,18 +35,31 @@
   });
   document.addEventListener('keydown',e=>{if(e.key==='Escape'&&document.body.classList.contains('cart-open'))closeCart();});
   $$('.shelf-tab').forEach(button=>button.addEventListener('click',()=>{$$('.shelf-tab').forEach(b=>{b.classList.toggle('active',b===button);b.setAttribute('aria-pressed',String(b===button));});const kind=button.dataset.filter;$$('[data-status]').forEach(tile=>{tile.hidden=kind!=='all'&&tile.dataset.status!==kind;});}));
-  async function checkout(){const button=$('#checkout-button');const note=$('#checkout-note');if(!STORE.live)return;button.disabled=true;button.textContent='Opening secure checkout…';note.textContent='';try{
+  async function checkout(){const button=$('#checkout-button');const note=$('#checkout-note');if(!checkoutReady)return;button.disabled=true;button.textContent='Opening secure checkout…';note.textContent='';try{
     const res=await fetch('/api/checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({items:Object.entries(cart).map(([sku,quantity])=>({sku,quantity}))})});
     const data=await res.json();if(!res.ok||!data.url)throw new Error(data.error||'Checkout is temporarily unavailable.');
     location.assign(data.url);
   }catch(err){note.textContent=err.message||'Checkout could not be opened.';button.disabled=false;button.textContent='Continue to secure checkout ↗';}}
   $('#checkout-button')?.addEventListener('click',checkout);
-  async function orderStatus(){const box=$('#order-status');if(!box)return;const session=new URLSearchParams(location.search).get('session_id');if(!session){box.innerHTML='<h2>No order found</h2><p>We did not receive an order reference. Please use the confirmation link provided after checkout.</p>';return;}
-    try{const res=await fetch('/api/order?session_id='+encodeURIComponent(session),{cache:'no-store'});const data=await res.json();if(!res.ok)throw Error(data.error||'Unable to check your order.');if(!data.paid){box.innerHTML='<h2>Payment not yet confirmed</h2><p>If you have just paid, please check back shortly. Downloads are only made available after payment is verified.</p>';return;}
-      const files=(data.downloads||[]).map(item=>`<a class="download-link" rel="noreferrer" href="/api/download?session_id=${encodeURIComponent(session)}&sku=${encodeURIComponent(item.sku)}">Download ${item.title} (${item.format}) ↓</a>`).join('');
-      box.innerHTML=`<p class="eyebrow">PAYMENT CONFIRMED</p><h2>Your order is on its way.</h2><p>Thank you for supporting independent storytelling. ${data.hasPhysical?'Your paperback order will be packed and posted by the author.':''}</p>${files||'<p>No digital files are included in this order.</p>'}`;
+  async function orderStatus(){
+    const box=$('#order-status');if(!box)return;
+    const params=new URLSearchParams(location.search);
+    const access=params.get('access'),session=params.get('session_id');
+    if(!access&&!session){box.innerHTML='<h2>No order reference found</h2><p>Please follow the link in your order confirmation email, or contact the author for help.</p>';return;}
+    try{
+      const query=access?'access='+encodeURIComponent(access):'session_id='+encodeURIComponent(session);
+      const res=await fetch('/api/order?'+query,{cache:'no-store'});
+      const data=await res.json();
+      if(!res.ok)throw Error(data.error||'Unable to check your order.');
+      if(!data.paid){box.innerHTML='<h2>Payment not yet confirmed</h2><p>If you have just paid, please check your email. The confirmation link will arrive after payment is verified.</p>';return;}
+      if(data.requiresEmailLink){
+        box.innerHTML='<p class="eyebrow">PAYMENT CONFIRMED</p><h2>Thank you for your order.</h2><p>Your receipt and, where applicable, a private ebook download link will be emailed to the address provided at checkout. If it does not arrive, please check your spam folder or email chris@chrisdeanbooks.com.</p>';
+        cart={};save();return;
+      }
+      const files=(data.downloads||[]).map(item=>`<a class="download-link" rel="noreferrer" href="/api/download?access=${encodeURIComponent(access)}&sku=${encodeURIComponent(item.sku)}">Download ${escapeHtml(item.title)} (${escapeHtml(item.format)}) ↓</a>`).join('');
+      box.innerHTML=`<p class="eyebrow">PAYMENT CONFIRMED</p><h2>Your order is on its way.</h2><p>Thank you for supporting independent storytelling. ${data.hasPhysical?'Your paperback order will be packed and posted by the author.':''}</p>${files||'<p>No digital files are included in this order.</p>'}<p>Private ebook links expire seven days after checkout was started. Contact chris@chrisdeanbooks.com for download assistance.</p>`;
       cart={};save();
-    }catch(err){box.innerHTML='<h2>Order lookup unavailable</h2><p>'+escapeHtml(err.message||'Please try the original order link again.')+'</p>';}
+    }catch(err){box.innerHTML='<h2>Order lookup unavailable</h2><p>'+escapeHtml(err.message||'Please contact chris@chrisdeanbooks.com')+'</p>';}
   }
   function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
   async function setupContact(){
@@ -81,14 +95,15 @@
       finally{button.disabled=false;if(window.turnstile)window.turnstile.reset();}
     });
   }
-  async function syncLivePrices(){if(!STORE.live)return;try{
+  async function syncLivePrices(){try{
     const res=await fetch('/api/catalog',{cache:'no-store'});const data=await res.json();if(!res.ok||!data.products)throw Error(data.error||'Cannot verify prices');
-    for(const [sku,p] of Object.entries(STORE.products)){const received=data.products[sku]?.price;if(!Number.isInteger(received)||received<1)throw Error('Missing price: '+sku);p.price=received;}
+    for(const [sku,p] of Object.entries(STORE.products)){const received=data.products[sku]?.price;if(!Number.isInteger(received)||received<1)throw Error('Missing price: '+sku);p.price=received;const stock=data.products[sku].available;if(Number.isInteger(stock)&&stock>=0)p.maxQuantity=stock;}
     $$('[data-edition]').forEach(el=>{const sku=el.dataset.edition;const price=STORE.products[sku];if(price)el.querySelector('strong').textContent=money(price.price);});
     $$('[data-price-sku]').forEach(el=>{const price=STORE.products[el.dataset.priceSku];if(price)el.textContent=money(price.price);});
+    $$('[data-add]').forEach(el=>{el.disabled=STORE.products[el.dataset.add]?.maxQuantity===0;});
     $$('.preview-only').forEach(el=>el.hidden=true);
-    pricesReady=true;renderCart();
-  }catch(err){pricesReady=false;renderCart();$('#checkout-note').textContent='Price verification failed. Checkout is unavailable.';console.error('Price loading:',err.message);}}
+    pricesReady=true;checkoutReady=true;document.body.classList.add('commerce-ready');renderCart();
+  }catch(err){pricesReady=false;checkoutReady=false;document.body.classList.remove('commerce-ready');renderCart();$('#checkout-note').textContent='Price verification failed. Checkout is unavailable.';console.error('Price loading:',err.message);}}
   $$('.year').forEach(el=>el.textContent=String(new Date().getFullYear()));
   const nav=document.body.dataset.current;if(nav)$$('.main-nav a').forEach(a=>a.classList.toggle('is-current',a.dataset.nav===nav));
   renderCart();syncLivePrices();orderStatus();setupContact();
