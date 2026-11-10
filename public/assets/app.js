@@ -103,6 +103,7 @@
     $$('[data-add]').forEach(el=>{el.disabled=STORE.products[el.dataset.add]?.maxQuantity===0;});
     $$('.preview-only').forEach(el=>el.hidden=true);
     pricesReady=true;checkoutReady=true;document.body.classList.add('commerce-ready');renderCart();
+    if(location.hash==='#purchase')requestAnimationFrame(()=>document.getElementById('purchase')?.scrollIntoView({block:'start'}));
   }catch(err){pricesReady=false;checkoutReady=false;document.body.classList.remove('commerce-ready');renderCart();$('#checkout-note').textContent='Price verification failed. Checkout is unavailable.';console.error('Price loading:',err.message);}}
   $$('.year').forEach(el=>el.textContent=String(new Date().getFullYear()));
   const nav=document.body.dataset.current;if(nav)$$('.main-nav a').forEach(a=>a.classList.toggle('is-current',a.dataset.nav===nav));
