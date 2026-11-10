@@ -4,10 +4,11 @@ export async function onRequestGet({env}){
   try{
     const products={};
     for(const [sku,item] of Object.entries(ITEMS)){
+      if(item.unavailable)continue;
       const price=await validatePrice(env,sku);
       let available=null;
       if(item.physical){
-        const stock=await env.ORDERS.prepare('SELECT on_hand,reserved FROM inventory WHERE sku=?').bind(sku).first();
+        const stock=await env.ORDERS.prepare('SELECT on_hand,reserved FROM inventory WHERE sku=?').bind(item.stockSku||sku).first();
         if(!stock)throw Error('Missing inventory for '+sku);
         available=Math.max(0,stock.on_hand-stock.reserved);
       }
