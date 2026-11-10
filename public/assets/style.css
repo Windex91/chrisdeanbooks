@@ -66,3 +66,10 @@ body:not(.commerce-ready) .cart-toggle,body:not(.commerce-ready) .shop-price,bod
 .library-purchase .btn { gap:6px; white-space:normal; }
 .library-purchase .btn span { font:inherit; white-space:nowrap; }
 body:not(.commerce-ready) .library-purchase { display:none; }
+
+/* Homepage featured novel rotation. */
+.feature-pause{background:transparent;color:var(--mute);border:1px solid var(--low);padding:7px 10px;font:inherit;font-size:11px;cursor:pointer}
+.feature-pause:hover,.feature-pause:focus-visible{color:var(--ink);border-color:var(--gold)}
+.hero-art:focus-visible{outline:2px solid var(--gold);outline-offset:4px}
+#purchase{scroll-margin-top:110px}
+@media(max-width:600px){.hero-stats{flex-wrap:wrap}.feature-pause{font-size:10px}}
