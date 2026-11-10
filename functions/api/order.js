@@ -10,6 +10,6 @@ export async function onRequestGet({request,env}){
     if(!session||!await paymentClear(env,session))return json({paid:false,downloads:[]});
     if(!access)return json({paid:true,downloads:[],hasPhysical:false,requiresEmailLink:true});
     const lines=await lineItems(env,session.id),items=purchasedSkus(env,lines);
-    return json({paid:true,hasPhysical:items.some(p=>p.physical),downloads:items.filter(p=>!p.physical&&p.sku!=='the-glass-tapestry-ebook').map(p=>({sku:p.sku,title:p.title,format:p.format}))});
+    return json({paid:true,hasPhysical:items.some(p=>p.physical),downloads:items.filter(p=>!p.physical).map(p=>({sku:p.sku,title:p.title,format:p.format}))});
   }catch(e){console.error('Order lookup:',e.name);return json({error:'Order lookup is unavailable. Please contact the author if you need help.'},502);}
 }

@@ -52,6 +52,13 @@ window.CD_STORE = Object.freeze({
       "price": 2499,
       "image": "/assets/img/wildborn-3d.webp",
       "maxQuantity": 9007199254740991
+    },
+    "the-glass-tapestry-ebook": {
+      "title": "The Glass Tapestry",
+      "format": "EPUB",
+      "price": 299,
+      "image": "/assets/img/the-glass-tapestry-3d.webp",
+      "maxQuantity": 1
     }
   }
 });

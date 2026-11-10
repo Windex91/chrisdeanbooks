@@ -76,7 +76,7 @@ test('mixed order: checkout, signed webhook, SQLite stock/order, both emails, pr
   const link=new URL(email.html.match(/href="([^"]+)"/)[1]),token=link.searchParams.get('access');
   const req=sku=>new Request(env.SITE_URL+'/api/download?access='+token+'&sku='+sku);
   const downloaded=await download({env,request:req('wildborn-ebook')});assert.equal(downloaded.status,200);assert.match(await downloaded.text(),/private EPUB ebooks\/wildborn.epub/);
-  assert.equal((await download({env,request:req('the-glass-tapestry-ebook')})).status,404);
+  assert.equal((await download({env,request:req('the-glass-tapestry-ebook')})).status,403);
   const summary=await order({env,request:new Request(env.SITE_URL+'/api/order?access='+token)});assert.equal((await summary.json()).hasPhysical,true);
   state.refunded=true;assert.equal((await download({env,request:req('wildborn-ebook')})).status,403);
   const refund={id:'evt_refund',type:'charge.refunded',livemode:false,data:{object:{payment_intent:'pi_test_integration'}}};

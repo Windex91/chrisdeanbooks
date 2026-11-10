@@ -4,7 +4,7 @@ import {verifyEbookAccess} from '../../lib/access.js';
 export async function onRequestGet({request,env}){
   try{
     const url=new URL(request.url),sku=url.searchParams.get('sku'),token=url.searchParams.get('access');
-    const item=ITEMS[sku];if(!item||item.physical||item.unavailable)return new Response('Invalid download',{status:404});
+    const item=ITEMS[sku];if(!item||item.physical)return new Response('Invalid download',{status:404});
     const sessionId=await verifyEbookAccess(env,token);
     if(!sessionId)return new Response('Download link is missing, invalid or expired. Please contact the author.',{status:403});
     const session=await getPaidSession(env,sessionId);

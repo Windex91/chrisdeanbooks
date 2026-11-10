@@ -102,7 +102,6 @@ const env={SHOP_ENABLED:'true',STRIPE_MODE:'sandbox',SITE_URL:'https://sandbox.e
 beforeEach(()=>{env.ORDERS=makeOrders();});
 
 test('cart rejects price tampering and unknown products',()=>{
-  assert.throws(()=>cleanCart({items:[{sku:'the-glass-tapestry-ebook',quantity:1}]}),/Invalid cart item/);
   assert.throws(()=>cleanCart({items:[{sku:'freebie',quantity:1}]}),/Invalid cart item/);
   assert.throws(()=>cleanCart({items:[{sku:'wildborn-ebook',quantity:2}]}),/Maximum quantity/);
   assert.deepEqual(cleanCart({items:[{sku:'wildborn-ebook',quantity:1,price:0}]}).map(i=>i.quantity),[1]);
@@ -196,13 +195,13 @@ test('public order redirect cannot enumerate purchased book titles',async()=>{
   }finally{globalThis.fetch=original;}
 });
 
-test('all seven purchasable editions have approved prices and correct delivery formats',()=>{
+test('all eight purchasable editions have approved prices and correct delivery formats',()=>{
   const approved={
     'beneath-falling-leaves-paperback':2599,'beneath-falling-leaves-ebook':299,
     'wildborn-paperback':1799,'wildborn-ebook':299,
-    'the-glass-tapestry-paperback':1799,'beneath-falling-leaves-special-pack':3399,'wildborn-special-pack':2499
+    'the-glass-tapestry-paperback':1799,'the-glass-tapestry-ebook':299,'beneath-falling-leaves-special-pack':3399,'wildborn-special-pack':2499
   };
-  assert.equal(Object.values(ITEMS).filter(item=>!item.unavailable).length,7);
+  assert.equal(Object.keys(ITEMS).length,8);
   for(const [sku,amount] of Object.entries(approved)){
     const item=ITEMS[sku];
     assert.equal(item.expectedCents,amount);
@@ -276,7 +275,7 @@ test('tax collection is controlled by an explicit server-side flag',async()=>{
   }finally{globalThis.fetch=original;}
 });
 
-test('server-side price catalogue validates all seven prices against approved cents',async()=>{
+test('server-side price catalogue validates all eight prices against approved cents',async()=>{
   const original=globalThis.fetch;
   const prices=Object.values(ITEMS).reduce((acc,item)=>{
     acc[env[item.priceVariable]]={livemode:false,product:{active:true,metadata:{site_sku:Object.keys(ITEMS).find(k=>ITEMS[k]===item)}},currency:'aud',type:'one_time',active:true,unit_amount:item.expectedCents};return acc;
@@ -289,7 +288,7 @@ test('server-side price catalogue validates all seven prices against approved ce
     const res=await catalog({env});
     assert.equal(res.status,200);
     const data=await res.json();
-    assert.equal(Object.keys(data.products).length,7);
+    assert.equal(Object.keys(data.products).length,8);
     assert.equal(data.products['the-glass-tapestry-paperback'].available,1);
     assert.equal(data.products['beneath-falling-leaves-paperback'].price,2599);
     prices.price_bfl_paper.unit_amount=2500;

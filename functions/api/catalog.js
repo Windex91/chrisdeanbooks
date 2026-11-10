@@ -4,7 +4,6 @@ export async function onRequestGet({env}){
   try{
     const products={};
     for(const [sku,item] of Object.entries(ITEMS)){
-      if(item.unavailable)continue;
       const price=await validatePrice(env,sku);
       let available=null;
       if(item.physical){
