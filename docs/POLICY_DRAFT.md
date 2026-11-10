@@ -3,11 +3,12 @@
 This is a draft; it has not replaced the public holding policy. Do not activate
 live checkout until the owner confirms and missing details are completed.
 
-## Shipping proposal
+## Shipping — rate confirmed; dispatch details pending
 
 Australian paperback delivery only at launch; maximum five paperbacks per order.
-Proposed charge structure: one book, two–three books, four–five books.
-**Owner to supply/approve each rate after checking packed weight, dimensions and carrier.**
+Owner approved 10 November 2026: flat A$13 per Australian paperback order,
+regardless of the number of books within the five-paperback limit.
+EPUB-only orders have no postage charge.
 Proposed dispatch promise: within three business days of payment (owner to confirm).
 Carrier, tracking and delivery estimates: **owner to confirm**. Do not promise arrival dates.
 Email chris@chrisdeanbooks.com about missing, damaged or incorrect deliveries.

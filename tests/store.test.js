@@ -98,7 +98,7 @@ function makeOrders(){
 }
 
 const request=(url,body,headers={})=>new Request(url,{method:'POST',headers:{'content-type':'application/json',Origin:'https://sandbox.example.com',...headers},body:JSON.stringify(body)});
-const env={SHOP_ENABLED:'true',STRIPE_MODE:'sandbox',SITE_URL:'https://sandbox.example.com',SHIPPING_AU_1_CENTS:'1295',SHIPPING_AU_2_3_CENTS:'1695',SHIPPING_AU_4_5_CENTS:'2195',STRIPE_SECRET_KEY:'sk_test_dummy',DOWNLOAD_TOKEN_SECRET:'test_signing_secret_012345678901234567890abcde',STRIPE_WEBHOOK_SECRET:'whsec_dummy',RESEND_API_KEY:'re_dummy',RESEND_FROM_ADDRESS:'orders@example.com',SHOP_OWNER_EMAIL:'author@example.com',ORDERS:makeOrders(),EBOOKS:{head:async()=>({})},STRIPE_PRICE_WILDBORN_PAPERBACK:'price_paper',STRIPE_PRICE_WILDBORN_EBOOK:'price_ebook',STRIPE_PRICE_BENEATH_FALLING_LEAVES_PAPERBACK:'price_bfl_paper',STRIPE_PRICE_BENEATH_FALLING_LEAVES_EBOOK:'price_bfl_epub',STRIPE_PRICE_THE_GLASS_TAPESTRY_PAPERBACK:'price_glass_paper',STRIPE_PRICE_THE_GLASS_TAPESTRY_EBOOK:'price_glass_epub',STRIPE_SHIPPING_RATE_AU:'shr_test'};
+const env={SHOP_ENABLED:'true',STRIPE_MODE:'sandbox',SITE_URL:'https://sandbox.example.com',STRIPE_SECRET_KEY:'sk_test_dummy',DOWNLOAD_TOKEN_SECRET:'test_signing_secret_012345678901234567890abcde',STRIPE_WEBHOOK_SECRET:'whsec_dummy',RESEND_API_KEY:'re_dummy',RESEND_FROM_ADDRESS:'orders@example.com',SHOP_OWNER_EMAIL:'author@example.com',ORDERS:makeOrders(),EBOOKS:{head:async()=>({})},STRIPE_PRICE_WILDBORN_PAPERBACK:'price_paper',STRIPE_PRICE_WILDBORN_EBOOK:'price_ebook',STRIPE_PRICE_BENEATH_FALLING_LEAVES_PAPERBACK:'price_bfl_paper',STRIPE_PRICE_BENEATH_FALLING_LEAVES_EBOOK:'price_bfl_epub',STRIPE_PRICE_THE_GLASS_TAPESTRY_PAPERBACK:'price_glass_paper',STRIPE_PRICE_THE_GLASS_TAPESTRY_EBOOK:'price_glass_epub',STRIPE_SHIPPING_RATE_AU:'shr_test'};
 beforeEach(()=>{env.ORDERS=makeOrders();});
 
 test('cart rejects price tampering and unknown products',()=>{
@@ -120,7 +120,7 @@ test('checkout creates AUD shipping session with server-authorized price',async(
    assert.equal(f.get('shipping_address_collection[allowed_countries][0]'),'AU');
    assert.equal(f.get('shipping_options[0][shipping_rate_data][type]'),'fixed_amount');
    assert.equal(f.get('shipping_options[0][shipping_rate_data][fixed_amount][currency]'),'aud');
-   assert.equal(f.get('shipping_options[0][shipping_rate_data][fixed_amount][amount]'),'1295');
+   assert.equal(f.get('shipping_options[0][shipping_rate_data][fixed_amount][amount]'),'1300');
    assert.equal(f.get('success_url'),'https://sandbox.example.com/success/?session_id={CHECKOUT_SESSION_ID}');
    return new Response(JSON.stringify({id:'cs_test_abcdefghijk123',livemode:false,url:'https://checkout.stripe.com/c/pay/test'}),{status:200});
  });
@@ -234,7 +234,7 @@ test('checkout supports a mixed physical and digital author-book basket',async()
     assert.equal(f.get('line_items[1][price]'),'price_glass_epub');
     assert.equal(f.get('line_items[1][quantity]'),'1');
     assert.equal(f.get('shipping_address_collection[allowed_countries][0]'),'AU');
-    assert.equal(f.get('shipping_options[0][shipping_rate_data][fixed_amount][amount]'),'1695');
+    assert.equal(f.get('shipping_options[0][shipping_rate_data][fixed_amount][amount]'),'1300');
     assert.equal(f.has('automatic_tax[enabled]'),false);
     return new Response(JSON.stringify({id:'cs_test_abcdefghijk123',livemode:false,url:'https://checkout.stripe.com/c/pay/sandbox'}),{status:200});
   });
@@ -297,22 +297,22 @@ test('server-side price catalogue validates all six prices against approved cent
   }finally{globalThis.fetch=original;}
 });
 
-test('Australian Parcel Post tiers use total paperback quantity',()=>{
+test('Flat A$13 shipping applies once to every supported paperback quantity',()=>{
   const cart=items=>cleanCart({items});
   assert.equal(shippingForCart(cart([{sku:'wildborn-ebook',quantity:1}])),null);
-  assert.equal(shippingForCart(cart([{sku:'wildborn-paperback',quantity:1}]),env).cents,1295);
-  assert.equal(shippingForCart(cart([{sku:'wildborn-paperback',quantity:2}]),env).cents,1695);
-  assert.equal(shippingForCart(cart([{sku:'wildborn-paperback',quantity:3},{sku:'the-glass-tapestry-ebook',quantity:1}]),env).cents,1695);
-  assert.equal(shippingForCart(cart([{sku:'wildborn-paperback',quantity:2},{sku:'beneath-falling-leaves-paperback',quantity:2}]),env).cents,2195);
-  assert.equal(shippingForCart(cart([{sku:'wildborn-paperback',quantity:5}]),env).cents,2195);
+  assert.equal(shippingForCart(cart([{sku:'wildborn-paperback',quantity:1}]),env).cents,1300);
+  assert.equal(shippingForCart(cart([{sku:'wildborn-paperback',quantity:2}]),env).cents,1300);
+  assert.equal(shippingForCart(cart([{sku:'wildborn-paperback',quantity:3},{sku:'the-glass-tapestry-ebook',quantity:1}]),env).cents,1300);
+  assert.equal(shippingForCart(cart([{sku:'wildborn-paperback',quantity:2},{sku:'beneath-falling-leaves-paperback',quantity:2}]),env).cents,1300);
+  assert.equal(shippingForCart(cart([{sku:'wildborn-paperback',quantity:5}]),env).cents,1300);
   assert.throws(()=>cart([{sku:'wildborn-paperback',quantity:4},{sku:'beneath-falling-leaves-paperback',quantity:2}]),/Maximum quantity/);
 });
 
-test('4 paperback Checkout Session uses the large parcel tier',async()=>{
+test('4 paperback Checkout Session still charges only A$13',async()=>{
   const original=globalThis.fetch;
   globalThis.fetch=providerFetch(async(url,options)=>{
     const f=new URLSearchParams(options.body);
-    assert.equal(f.get('shipping_options[0][shipping_rate_data][fixed_amount][amount]'),'2195');
+    assert.equal(f.get('shipping_options[0][shipping_rate_data][fixed_amount][amount]'),'1300');
     assert.equal(f.get('shipping_address_collection[allowed_countries][0]'),'AU');
     return new Response(JSON.stringify({id:'cs_test_abcdefghijk123',livemode:false,url:'https://checkout.stripe.com/c/pay/sandbox'}),{status:200});
   });

@@ -17,7 +17,7 @@ function database(){
 }
 function setup(){
  const db=database();db.sql.exec("UPDATE inventory SET on_hand=5");
- const env={ORDERS:db,SHOP_ENABLED:'true',STRIPE_MODE:'sandbox',SITE_URL:'https://sandbox.example.com',STRIPE_SECRET_KEY:'sk_test_fixture',STRIPE_WEBHOOK_SECRET:'whsec_fixture',RESEND_API_KEY:'re_fixture',RESEND_FROM_ADDRESS:'orders@example.com',SHOP_OWNER_EMAIL:'author@example.com',DOWNLOAD_TOKEN_SECRET:'fixture-only-012345678901234567890123456789',SHIPPING_AU_1_CENTS:'1295',SHIPPING_AU_2_3_CENTS:'1695',SHIPPING_AU_4_5_CENTS:'2195',EBOOKS:{head:async()=>({}),get:async key=>({body:new Blob(['private EPUB '+key])})}};
+ const env={ORDERS:db,SHOP_ENABLED:'true',STRIPE_MODE:'sandbox',SITE_URL:'https://sandbox.example.com',STRIPE_SECRET_KEY:'sk_test_fixture',STRIPE_WEBHOOK_SECRET:'whsec_fixture',RESEND_API_KEY:'re_fixture',RESEND_FROM_ADDRESS:'orders@example.com',SHOP_OWNER_EMAIL:'author@example.com',DOWNLOAD_TOKEN_SECRET:'fixture-only-012345678901234567890123456789',EBOOKS:{head:async()=>({}),get:async key=>({body:new Blob(['private EPUB '+key])})}};
  for(const [sku,item] of Object.entries(ITEMS))env[item.priceVariable]='price_'+sku;
  const state={emails:new Map(),created:null,refunded:false,failOwner:false};
  const response=data=>new Response(JSON.stringify(data));
@@ -35,7 +35,7 @@ function setup(){
   if(url.includes('/payment_intents/'))return response({status:'succeeded',livemode:false,latest_charge:{paid:true,refunded:state.refunded,disputed:false,amount_refunded:state.refunded?299:0}});
   if(options.method==='POST'&&url.endsWith('/checkout/sessions')){
    const p=new URLSearchParams(options.body);assert.equal(p.has('payment_method_types[0]'),false);
-   state.params=p;state.created={id:'cs_test_integration123456',livemode:false,created:Math.floor(Date.now()/1000),metadata:{store:p.get('metadata[store]'),reservation_id:p.get('metadata[reservation_id]')},mode:'payment',payment_status:'paid',payment_intent:'pi_test_integration',currency:'aud',amount_total:6992,total_details:{amount_shipping:1695,amount_tax:0},customer_details:{email:'reader@example.com',name:'Test Reader'},collected_information:{shipping_details:{name:'Test Reader',address:{line1:'Sandbox address',country:'AU',postal_code:'2000'}}}};
+   state.params=p;state.created={id:'cs_test_integration123456',livemode:false,created:Math.floor(Date.now()/1000),metadata:{store:p.get('metadata[store]'),reservation_id:p.get('metadata[reservation_id]')},mode:'payment',payment_status:'paid',payment_intent:'pi_test_integration',currency:'aud',amount_total:6597,total_details:{amount_shipping:1300,amount_tax:0},customer_details:{email:'reader@example.com',name:'Test Reader'},collected_information:{shipping_details:{name:'Test Reader',address:{line1:'Sandbox address',country:'AU',postal_code:'2000'}}}};
    return response({...state.created,url:'https://checkout.stripe.com/c/pay/test'});
   }
   if(url.includes('/line_items'))return response({data:[{price:{id:env.STRIPE_PRICE_BENEATH_FALLING_LEAVES_PAPERBACK},quantity:2},{price:{id:env.STRIPE_PRICE_WILDBORN_EBOOK},quantity:1}]});
@@ -56,7 +56,7 @@ test('mixed order: checkout, signed webhook, SQLite stock/order, both emails, pr
  const {env,state,fetch,db}=setup(),original=globalThis.fetch;globalThis.fetch=fetch;
  try{
   assert.equal((await openCheckout(env)).status,200);
-  assert.equal(state.params.get('shipping_options[0][shipping_rate_data][fixed_amount][amount]'),'1695');
+  assert.equal(state.params.get('shipping_options[0][shipping_rate_data][fixed_amount][amount]'),'1300');
   const event={id:'evt_fixture',type:'checkout.session.completed',livemode:false,data:{object:state.created}};
   // Fail one recipient, then replay; the customer email must not duplicate.
   state.failOwner=true;
@@ -68,7 +68,7 @@ test('mixed order: checkout, signed webhook, SQLite stock/order, both emails, pr
   const stock=db.sql.prepare("SELECT on_hand,reserved,sold FROM inventory WHERE sku='beneath-falling-leaves-paperback'").get();
   assert.deepEqual({...stock},{on_hand:3,reserved:0,sold:2});
   const stored=db.sql.prepare('SELECT * FROM orders').get();assert.equal(stored.customer_notified,1);assert.equal(stored.owner_notified,1);assert.equal(JSON.parse(stored.items_json)[0].quantity,2);
-  assert.equal(db.sql.prepare('SELECT amount_total FROM order_payments').get().amount_total,6992);
+  assert.equal(db.sql.prepare('SELECT amount_total FROM order_payments').get().amount_total,6597);
   const email=state.emails.get(state.created.id+'/customer/v1');assert.match(email.html,/Beneath Falling Leaves — Paperback × 2/);
   const link=new URL(email.html.match(/href="([^"]+)"/)[1]),token=link.searchParams.get('access');
   const req=sku=>new Request(env.SITE_URL+'/api/download?access='+token+'&sku='+sku);
@@ -91,7 +91,7 @@ test('live checkout fails closed without every approval; sandbox cannot run on p
  assert.equal(checkoutAllowed(approved),true);
  for(const key of ['LIVE_LAUNCH_APPROVED','SHIPPING_APPROVED','GST_APPROVED','POLICIES_APPROVED','FULFILMENT_TESTS_PASSED'])assert.equal(checkoutAllowed({...approved,[key]:'false'}),false);
  assert.throws(()=>checkoutAllowed({...approved,STRIPE_SECRET_KEY:'rk_test_fixture'}),/mismatch/);
- assert.throws(()=>shippingForCart(cleanCart({items:[{sku:'wildborn-paperback',quantity:1}]}),{}),/Shipping/);
+ assert.equal(shippingForCart(cleanCart({items:[{sku:'wildborn-paperback',quantity:1}]}),{SHIPPING_AU_1_CENTS:'1'}).cents,1300);
  db.sql.close();
 });
 
@@ -106,4 +106,13 @@ test('invalid signatures and wrong-mode webhooks cannot write orders',async()=>{
  assert.equal((await webhook({env,request:new Request(env.SITE_URL+'/api/webhook',{method:'POST',body:'{}'})})).status,400);
  assert.equal((await webhook({env,request:await eventRequest(env,{livemode:true,type:'checkout.session.completed'})})).status,400);
  assert.equal(db.sql.prepare('SELECT COUNT(*) AS n FROM orders').get().n,0);db.sql.close();
+});
+
+test('confirmed starting stock is seeded once and never resets existing sales',()=>{
+ const db=database();
+ assert.deepEqual(db.sql.prepare('SELECT sku,on_hand FROM inventory ORDER BY sku').all().map(r=>[r.sku,r.on_hand]),[['beneath-falling-leaves-paperback',10],['the-glass-tapestry-paperback',1],['wildborn-paperback',10]]);
+ db.sql.exec("UPDATE inventory SET on_hand=9,sold=1 WHERE sku='wildborn-paperback'");
+ db.sql.exec(readFileSync(new URL('../db_schema.sql',import.meta.url),'utf8'));
+ assert.equal(db.sql.prepare("SELECT on_hand FROM inventory WHERE sku='wildborn-paperback'").get().on_hand,9);
+ db.sql.close();
 });

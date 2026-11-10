@@ -33,9 +33,10 @@ CREATE TABLE IF NOT EXISTS inventory_reservation_items (
   PRIMARY KEY (reservation_id, sku)
 );
 CREATE INDEX IF NOT EXISTS inventory_reservation_status_idx ON inventory_reservations(state, expires_at);
--- Stock starts at zero. Set actual counted stock separately after owner confirmation.
+-- Initial stock confirmed by owner on 10 November 2026.
+-- INSERT OR IGNORE never resets existing inventory or sold/reserved quantities.
 INSERT OR IGNORE INTO inventory (sku,on_hand) VALUES
-('beneath-falling-leaves-paperback',0),('wildborn-paperback',0),('the-glass-tapestry-paperback',0);
+('beneath-falling-leaves-paperback',10),('wildborn-paperback',10),('the-glass-tapestry-paperback',1);
 CREATE TABLE IF NOT EXISTS order_payments (
  session_id TEXT PRIMARY KEY, payment_intent TEXT NOT NULL, amount_total INTEGER NOT NULL,
  shipping_total INTEGER NOT NULL, tax_total INTEGER NOT NULL, currency TEXT NOT NULL,

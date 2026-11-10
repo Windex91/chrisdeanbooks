@@ -28,8 +28,10 @@ Use trusted dashboards for secret entry; never commit or paste credentials into 
    Do not expose R2 through r2.dev or a public custom domain.
 2. Back up any existing D1 database. Run `db_schema.sql` using the D1 console against
    the intended database. It is additive and uses INSERT OR IGNORE; it does not
-   overwrite existing stock. Production new stock starts at zero. Enter counted stock
-   only after owner confirmation. Test stock belongs only in the sandbox database.
+   overwrite existing stock. Initial production stock confirmed 10 November 2026: Beneath Falling Leaves 10,
+   Wildborn 10, The Glass Tapestry 1. Existing rows are NOT overwritten; inspect
+   existing sales/reservations before reconciling any previous zero-stock rows.
+   Test stock belongs only in the sandbox database.
 3. Upload the approved final EPUBs privately under:
    - `ebooks/beneath-falling-leaves.epub`
    - `ebooks/wildborn.epub`
@@ -55,10 +57,10 @@ Use trusted dashboards for secret entry; never commit or paste credentials into 
    `checkout.session.async_payment_failed`, `checkout.session.expired`,
    `charge.refunded`, `charge.dispute.created`. Set each signing secret in its
    corresponding Pages environment. Redeploy after binding/secret updates.
-8. Set shipping variables only after agreement: `SHIPPING_AU_1_CENTS`,
-   `SHIPPING_AU_2_3_CENTS`, `SHIPPING_AU_4_5_CENTS` (positive integer AUD cents).
-   These are charges per whole order based on total paperbacks, never per title.
-   Ebook-only baskets have no shipping. Maximum five paperbacks per order.
+8. Shipping is owner-approved: flat A$13 per Australian paperback order, no postage
+   for EPUB-only orders. Implemented server-side as 1300 AUD cents; obsolete quantity
+   tier variables are ignored. Record `SHIPPING_APPROVED=true` during secure setup.
+   Maximum five paperbacks per order remains unchanged.
 9. Obtain the owner's GST status. Use `GST_TREATMENT=not_registered` only if confirmed.
    For `registered_inclusive`, confirm active Stripe Tax registrations/settings,
    appropriate product tax codes, inclusive prices and a successful tax calculation;
@@ -91,7 +93,7 @@ configuration. Do not create a real payment without separate explicit approval.
 Both `public/assets/catalog.js` live flag and `SHOP_ENABLED` stay false by default.
 Live requests additionally require ALL of these explicit true flags:
 `LIVE_LAUNCH_APPROVED`, `SHIPPING_APPROVED`, `GST_APPROVED`, `POLICIES_APPROVED`,
-`FULFILMENT_TESTS_PASSED`. There is no default shipping rate or assumed GST treatment.
+`FULFILMENT_TESTS_PASSED`. Shipping is fixed at the approved A$13; GST treatment is still unconfirmed.
 These are deployment controls, not evidence: record who approved and what tests passed
 before setting them. Rollback: disable SHOP_ENABLED immediately; leave webhooks running
 so existing paid orders still fulfil. Never disable webhook processing to pause new sales.
