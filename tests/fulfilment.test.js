@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {DatabaseSync} from 'node:sqlite';
 import {readFileSync} from 'node:fs';
-import {ITEMS,checkoutAllowed,shippingForCart,cleanCart} from '../lib/commerce.js';
+import {ITEMS,checkoutAllowed,shippingForCart,cleanCart,isNoCostOrder} from '../lib/commerce.js';
 import {onRequestPost as checkout} from '../functions/api/checkout.js';
 import {onRequestPost as webhook} from '../functions/api/webhook.js';
 import {onRequestGet as download} from '../functions/api/download.js';
@@ -34,11 +34,11 @@ function setup(){
   }
   if(url.includes('/payment_intents/'))return response({status:'succeeded',livemode:false,latest_charge:{paid:true,refunded:state.refunded,disputed:false,amount_refunded:state.refunded?299:0}});
   if(options.method==='POST'&&url.endsWith('/checkout/sessions')){
-   const p=new URLSearchParams(options.body);assert.equal(p.has('payment_method_types[0]'),false);assert.equal(p.has('automatic_tax[enabled]'),false);
+   const p=new URLSearchParams(options.body);assert.equal(p.has('payment_method_types[0]'),false);assert.equal(p.get('allow_promotion_codes'),'true');assert.equal(p.has('automatic_tax[enabled]'),false);
    state.params=p;state.created={id:'cs_test_integration123456',livemode:false,created:Math.floor(Date.now()/1000),metadata:{store:p.get('metadata[store]'),gst_treatment:p.get('metadata[gst_treatment]'),reservation_id:p.get('metadata[reservation_id]')},mode:'payment',payment_status:'paid',payment_intent:'pi_test_integration',currency:'aud',amount_total:8397,total_details:{amount_shipping:1300,amount_tax:0},customer_details:{email:'reader@example.com',name:'Test Reader'},collected_information:{shipping_details:{name:'Test Reader',address:{line1:'Sandbox address',country:'AU',postal_code:'2000'}}}};
    return response({...state.created,url:'https://checkout.stripe.com/c/pay/test'});
   }
-  if(url.includes('/line_items'))return response({data:[{price:{id:env.STRIPE_PRICE_BENEATH_FALLING_LEAVES_SPECIAL_PACK},quantity:2},{price:{id:env.STRIPE_PRICE_WILDBORN_EBOOK},quantity:1}]});
+  if(url.includes('/line_items'))return response({data:state.lines||[{price:{id:env.STRIPE_PRICE_BENEATH_FALLING_LEAVES_SPECIAL_PACK},quantity:2},{price:{id:env.STRIPE_PRICE_WILDBORN_EBOOK},quantity:1}]});
   if(url.includes('/checkout/sessions/'))return response(state.created);
   throw Error('Unexpected request '+url);
  };
@@ -118,4 +118,37 @@ test('confirmed starting stock is seeded once and never resets existing sales',(
  db.sql.exec(readFileSync(new URL('../db_schema.sql',import.meta.url),'utf8'));
  assert.equal(db.sql.prepare("SELECT on_hand FROM inventory WHERE sku='wildborn-paperback'").get().on_hand,9);
  db.sql.close();
+});
+
+
+test('discounted order preserves variants, stock and actual total in records and emails',async()=>{
+ const {env,state,fetch,db}=setup(),original=globalThis.fetch;globalThis.fetch=fetch;
+ try{
+  assert.equal((await openCheckout(env)).status,200);
+  state.created.amount_total=7687;state.created.total_details.amount_discount=710;
+  const event={id:'evt_discount',type:'checkout.session.completed',livemode:false,data:{object:state.created}};
+  assert.equal((await webhook({env,request:await eventRequest(env,event)})).status,200);
+  assert.equal(db.sql.prepare('SELECT amount_total FROM order_payments').get().amount_total,7687);
+  const email=state.emails.get(state.created.id+'/customer/v1');
+  assert.match(email.html,/Discount: A\$7.10/);assert.match(email.html,/Shipping: A\$13.00/);
+  assert.match(email.html,/Special Pack × 2/);
+ }finally{globalThis.fetch=original;db.sql.close();}
+});
+
+test('fully discounted ebook completes, sends one pair of emails and allows private download',async()=>{
+ const {env,state,fetch,db}=setup(),original=globalThis.fetch;globalThis.fetch=fetch;
+ try{
+  const response=await checkout({env,request:new Request(env.SITE_URL+'/api/checkout',{method:'POST',headers:{Origin:env.SITE_URL},body:JSON.stringify({items:[{sku:'wildborn-ebook',quantity:1}]})})});
+  assert.equal(response.status,200);assert.equal(state.params.has('shipping_address_collection[allowed_countries][0]'),false);
+  Object.assign(state.created,{status:'complete',payment_status:'no_payment_required',payment_intent:null,amount_total:0,collected_information:null,total_details:{amount_shipping:0,amount_tax:0,amount_discount:299}});
+  state.lines=[{price:{id:env.STRIPE_PRICE_WILDBORN_EBOOK},quantity:1}];
+  const event={id:'evt_free',type:'checkout.session.completed',livemode:false,data:{object:state.created}};
+  for(let i=0;i<2;i++)assert.equal((await webhook({env,request:await eventRequest(env,event)})).status,200);
+  assert.equal(state.emails.size,2);assert.equal(db.sql.prepare('SELECT amount_total FROM order_payments').get().amount_total,0);
+  const email=state.emails.get(state.created.id+'/customer/v1'),link=new URL(email.html.match(/href="([^"]+)"/)[1]),token=link.searchParams.get('access');
+  assert.equal((await download({env,request:new Request(env.SITE_URL+'/api/download?access='+token+'&sku=wildborn-ebook')})).status,200);
+  assert.equal((await (await order({env,request:new Request(env.SITE_URL+'/api/order?access='+token)})).json()).paid,true);
+  assert.equal(db.sql.prepare('SELECT SUM(sold) AS n FROM inventory').get().n,0);
+  for(const changed of [{status:'open'},{amount_total:299},{payment_status:'unpaid'},{payment_intent:'pi_fake'},{metadata:{store:'other'}}])assert.equal(isNoCostOrder({...state.created,...changed}),false);
+ }finally{globalThis.fetch=original;db.sql.close();}
 });
