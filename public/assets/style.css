@@ -60,3 +60,8 @@ body:not(.commerce-ready) .cart-toggle,body:not(.commerce-ready) .shop-price,bod
 /* A transparent WebP book shape needs an alpha-aware shadow rather than a rectangular one. */
 .library-cover img{box-shadow:none;filter:drop-shadow(14px 22px 17px #0009)}
 @media(max-width:850px){.upcoming-cover{min-height:170px}.upcoming-cover img{max-height:270px}}
+
+.library-purchase { display:flex; flex-wrap:wrap; gap:8px; margin:0 0 12px; }
+.library-purchase .btn { gap:6px; white-space:normal; }
+.library-purchase .btn span { font:inherit; white-space:nowrap; }
+body:not(.commerce-ready) .library-purchase { display:none; }
