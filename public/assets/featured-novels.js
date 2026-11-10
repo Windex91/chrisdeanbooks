@@ -36,14 +36,29 @@
     const image = new Image();
     image.src = '/assets/img/' + slug + '-3d.webp';
   }
-  function render() {
+  const coverImage = find('.hero-art img');
+  let finishTransition = () => {};
+  function render(animate = false) {
+    finishTransition();
+    let outgoing;
+    if (animate && !reducedMotion.matches) {
+      outgoing = coverImage.cloneNode(false);
+      outgoing.alt = '';
+      outgoing.setAttribute('aria-hidden', 'true');
+      Object.assign(outgoing.style, {
+        position: 'absolute', left: coverImage.offsetLeft + 'px', top: coverImage.offsetTop + 'px',
+        width: coverImage.offsetWidth + 'px', height: coverImage.offsetHeight + 'px',
+        margin: '0', pointerEvents: 'none', transition: 'none'
+      });
+      hero.appendChild(outgoing);
+    }
     const [slug, title, tagline] = novels[index];
     const url = '/books/' + slug + '/#purchase';
     const number = String(index + 1).padStart(2, '0');
     hero.href = url;
     hero.setAttribute('aria-label', 'Choose an edition of ' + title);
-    find('.hero-art img').src = '/assets/img/' + slug + '-3d.webp';
-    find('.hero-art img').alt = title + ' book cover artwork';
+    coverImage.src = '/assets/img/' + slug + '-3d.webp';
+    coverImage.alt = title + ' book cover artwork';
     const button = find('.hero-buttons .btn-gold');
     button.href = url;
     button.firstChild.nodeValue = 'Explore ' + title + ' ';
@@ -52,11 +67,29 @@
     find('.hero-stats b').textContent = number;
     find('.hero-caption span').textContent = number + ' / FEATURED NOVEL';
     find('.hero-caption strong').textContent = title.toUpperCase();
+    if (outgoing) {
+      const timing = { duration: 650, easing: 'cubic-bezier(.22,.61,.36,1)', fill: 'both' };
+      const exit = outgoing.animate([
+        { transform: 'translateX(0)', opacity: 1 },
+        { transform: 'translateX(-110px)', opacity: 0 }
+      ], timing);
+      const enter = coverImage.animate([
+        { transform: 'translateX(110px)', opacity: 0 },
+        { transform: 'translateX(0)', opacity: 1 }
+      ], timing);
+      const cleanup = () => {
+        outgoing.remove(); exit.cancel(); enter.cancel();
+        if (finishTransition === cleanup) finishTransition = () => {};
+      };
+      finishTransition = cleanup;
+      enter.finished.then(cleanup, () => {});
+    }
   }
   function schedule() {
     clearInterval(timer);
+    finishTransition();
     if (!paused && !hovering && !focused && !document.hidden) {
-      timer = setInterval(() => { index = (index + 1) % novels.length; render(); }, 3000);
+      timer = setInterval(() => { index = (index + 1) % novels.length; render(true); }, 3000);
     }
     pause.textContent = paused ? 'Resume rotation' : 'Pause rotation';
     pause.setAttribute('aria-pressed', String(paused));
