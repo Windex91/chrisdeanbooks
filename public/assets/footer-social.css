@@ -1,0 +1,5 @@
+.footer-links{gap:clamp(24px,5vw,70px);flex-wrap:wrap}
+.footer-links .social-button{display:flex;align-items:center;justify-content:space-between;gap:24px;min-width:130px;min-height:40px;padding:8px 12px;border:1px solid var(--low);color:var(--ink);transition:background .2s,border-color .2s}
+.footer-links .social-button:hover,.footer-links .social-button:focus-visible{background:var(--panel);border-color:var(--gold);color:var(--gold)}
+.footer-links .social-button:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+@media(max-width:600px){.footer-links{justify-content:flex-start;gap:28px 36px}.footer-social{min-width:130px}}
