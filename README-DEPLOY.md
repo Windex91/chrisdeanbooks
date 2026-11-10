@@ -43,3 +43,9 @@ Follow Cloudflare's prompts exactly.
 - Test on mobile.
 - Confirm https works (Cloudflare will issue SSL).
 - Validate links.
+
+## Current Cloudflare Pages production configuration (November 2026)
+
+The live custom domains `chrisdeanbooks.com` and `www.chrisdeanbooks.com` belong to the Cloudflare Pages project `christopherdeanbooks` (not the similarly named `chrisdeanbooks` preview project). Both projects use `Windex91/chrisdeanbooks`, branch `main` for production. For the live project, set **Build output directory** to `public`, **Root directory** to repository root, and leave **Build command** blank. The previous output directory `.` served the legacy root-level HTML instead of the new `public/` website. Do not move the custom domains or modify mail DNS records.
+
+Production catalogue is intentionally non-transactional (`public/assets/catalog.js` has `live: false`). Do not enable customer checkout until Stripe, R2 ebook storage, D1 order database, paid-order emails, shipping and policies have been tested and approved. Keep the experimental sandbox checkout branch separate from `main`.
