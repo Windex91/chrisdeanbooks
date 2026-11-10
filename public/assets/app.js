@@ -5,7 +5,8 @@
   const $$=(sel,root=document)=>Array.from(root.querySelectorAll(sel));
   const money=(cents)=>'A$'+new Intl.NumberFormat('en-AU',{minimumFractionDigits:2,maximumFractionDigits:2}).format(cents/100);
   const key='chris-dean-book-bag-v1';
-  let pricesReady=!STORE.live;
+  let pricesReady=false;
+  let checkoutReady=false;
   let cart={};
   try { const parsed=JSON.parse(localStorage.getItem(key)||'{}'); if(parsed&&typeof parsed==='object'&&!Array.isArray(parsed))cart=parsed; }catch{}
   const available=(sku)=>Boolean(STORE.products[sku]);
@@ -19,7 +20,7 @@
     if(!count){items.innerHTML='<div class="empty-cart">Your book bag is empty.<br>There are worlds waiting to be discovered.</div>';}
     else items.innerHTML=Object.entries(cart).map(([sku,q])=>{const p=STORE.products[sku];return `<div class="cart-item"><img src="${p.image}" alt="${p.title} cover"><div><h3>${p.title}</h3><span class="kind">${p.format}</span><div class="qty-row"><button data-qty="${sku}" data-delta="-1" aria-label="Remove one ${p.format}">−</button><span>${q}</span><button data-qty="${sku}" data-delta="1" aria-label="Add one ${p.format}" ${q>=p.maxQuantity?'disabled':''}>+</button><button class="remove-item" data-remove="${sku}">Remove</button></div></div><strong class="price">${money(p.price*q)}</strong></div>`;}).join('');
     $('#cart-subtotal').textContent=money(Object.entries(cart).reduce((sum,[sku,q])=>sum+STORE.products[sku].price*q,0));
-    const checkout=$('#checkout-button');checkout.disabled=!count||!STORE.live||!pricesReady;checkout.style.opacity=(!count||!STORE.live||!pricesReady)?'.52':'1';checkout.style.cursor=(!count||!STORE.live||!pricesReady)?'not-allowed':'pointer';$('#checkout-note').textContent=!STORE.live?'Checkout will open after payment and delivery testing is complete.':!pricesReady?'Loading verified prices from our payment provider…':!count?'Add a book to continue.':'';
+    const checkout=$('#checkout-button');checkout.disabled=!count||!checkoutReady||!pricesReady;checkout.style.opacity=(!count||!checkoutReady||!pricesReady)?'.52':'1';checkout.style.cursor=(!count||!checkoutReady||!pricesReady)?'not-allowed':'pointer';$('#checkout-note').textContent=!checkoutReady?'Checkout will open after payment and delivery testing is complete.':!pricesReady?'Loading verified prices from our payment provider…':!count?'Add a book to continue.':'';
   }
   document.addEventListener('click',e=>{
     const addButton=e.target.closest('[data-add]');if(addButton){add(addButton.dataset.add);return;}
@@ -34,7 +35,7 @@
   });
   document.addEventListener('keydown',e=>{if(e.key==='Escape'&&document.body.classList.contains('cart-open'))closeCart();});
   $$('.shelf-tab').forEach(button=>button.addEventListener('click',()=>{$$('.shelf-tab').forEach(b=>{b.classList.toggle('active',b===button);b.setAttribute('aria-pressed',String(b===button));});const kind=button.dataset.filter;$$('[data-status]').forEach(tile=>{tile.hidden=kind!=='all'&&tile.dataset.status!==kind;});}));
-  async function checkout(){const button=$('#checkout-button');const note=$('#checkout-note');if(!STORE.live)return;button.disabled=true;button.textContent='Opening secure checkout…';note.textContent='';try{
+  async function checkout(){const button=$('#checkout-button');const note=$('#checkout-note');if(!checkoutReady)return;button.disabled=true;button.textContent='Opening secure checkout…';note.textContent='';try{
     const res=await fetch('/api/checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({items:Object.entries(cart).map(([sku,quantity])=>({sku,quantity}))})});
     const data=await res.json();if(!res.ok||!data.url)throw new Error(data.error||'Checkout is temporarily unavailable.');
     location.assign(data.url);
@@ -94,14 +95,14 @@
       finally{button.disabled=false;if(window.turnstile)window.turnstile.reset();}
     });
   }
-  async function syncLivePrices(){if(!STORE.live)return;try{
+  async function syncLivePrices(){try{
     const res=await fetch('/api/catalog',{cache:'no-store'});const data=await res.json();if(!res.ok||!data.products)throw Error(data.error||'Cannot verify prices');
     for(const [sku,p] of Object.entries(STORE.products)){const received=data.products[sku]?.price;if(!Number.isInteger(received)||received<1)throw Error('Missing price: '+sku);p.price=received;}
     $$('[data-edition]').forEach(el=>{const sku=el.dataset.edition;const price=STORE.products[sku];if(price)el.querySelector('strong').textContent=money(price.price);});
     $$('[data-price-sku]').forEach(el=>{const price=STORE.products[el.dataset.priceSku];if(price)el.textContent=money(price.price);});
     $$('.preview-only').forEach(el=>el.hidden=true);
-    pricesReady=true;renderCart();
-  }catch(err){pricesReady=false;renderCart();$('#checkout-note').textContent='Price verification failed. Checkout is unavailable.';console.error('Price loading:',err.message);}}
+    pricesReady=true;checkoutReady=true;document.body.classList.add('commerce-ready');renderCart();
+  }catch(err){pricesReady=false;checkoutReady=false;document.body.classList.remove('commerce-ready');renderCart();$('#checkout-note').textContent='Price verification failed. Checkout is unavailable.';console.error('Price loading:',err.message);}}
   $$('.year').forEach(el=>el.textContent=String(new Date().getFullYear()));
   const nav=document.body.dataset.current;if(nav)$$('.main-nav a').forEach(a=>a.classList.toggle('is-current',a.dataset.nav===nav));
   renderCart();syncLivePrices();orderStatus();setupContact();
