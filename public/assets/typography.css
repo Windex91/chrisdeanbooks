@@ -1,0 +1,11 @@
+/* Typography: Cinzel display, Lora prose, Inter shopping controls. */
+:root{--serif:'Cinzel',Georgia,serif;--prose:'Lora',Georgia,serif;--sans:'Inter',system-ui,sans-serif}
+.brand,.footer-brand,.footer-brand span,.main-nav a,.footer-links strong,h1,h2,h3{font-family:var(--serif)}
+h1 em,h1 i,h2 em,h2 i,h3 em,h3 i{font-style:normal}
+p,.library-copy h3,.detail-content h2,.about-banner span,.quote-panel span{font-family:var(--prose)}
+button,input,textarea,select,.btn,.text-link,.social-button,.edition,.shop-price,.subtotal,.subtotal strong,.cart-drawer,.cart-drawer h2,.cart-drawer h3,.cart-drawer p,.status-box,.status-box h2,.status-box p,.download-link,[data-price-sku],.price-footnote,.byline,.eyebrow,.hero-above,.shop-note,.shop-disclaimer,.form-status,.about-page-art>p,.footer-main p,.tile-meta p:has([data-price-sku]){font-family:var(--sans)}
+/* Cinzel has wider capitals: retain the scale while keeping the hero within its column. */
+.hero h1{font-size:clamp(54px,6.1vw,92px);line-height:1.02}
+.detail-title,.upcoming-entry h2,.soon-card h3{overflow-wrap:break-word}
+@media(max-width:900px){.hero h1{font-size:clamp(54px,9.5vw,92px)}}
+@media(max-width:530px){.hero h1{font-size:clamp(36px,10.7vw,57px)}.brand{font-size:14px}.inner-hero h1{font-size:clamp(42px,10.5vw,59px)}}
