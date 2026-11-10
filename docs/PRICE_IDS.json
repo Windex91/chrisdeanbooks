@@ -1,0 +1,19 @@
+{
+  "note": "Verified 2026-11-10. Price IDs are public identifiers, not credentials. GST treatment unconfirmed.",
+  "sandbox": {
+    "beneath-falling-leaves-paperback": "price_1UZm2eR50HKK3kRTNCuWE4oS",
+    "beneath-falling-leaves-ebook": "price_1UZm2yR50HKK3kRTeGNxl68D",
+    "wildborn-paperback": "price_1UZm30R50HKK3kRTtXAoBY8c",
+    "wildborn-ebook": "price_1UZm32R50HKK3kRTy4xnMW31",
+    "the-glass-tapestry-paperback": "price_1UZm35R50HKK3kRTgo4dhVWZ",
+    "the-glass-tapestry-ebook": "price_1UZm37R50HKK3kRTrX4NP8oN"
+  },
+  "live": {
+    "wildborn-ebook": "price_1Ua2CWJicHbZScSbLApyfqzA",
+    "wildborn-paperback": "price_1Ua2CWJicHbZScSbdCEYwHjc",
+    "the-glass-tapestry-paperback": "price_1Ua2CWJicHbZScSbMpdhs3W4",
+    "the-glass-tapestry-ebook": "price_1Ua2CWJicHbZScSbfTYrdtrt",
+    "beneath-falling-leaves-paperback": "price_1Ua2CVJicHbZScSbUIk31x3I",
+    "beneath-falling-leaves-ebook": "price_1Ua2CUJicHbZScSbzjj3A5t1"
+  }
+}
