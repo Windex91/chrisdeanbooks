@@ -389,3 +389,39 @@ function providerFetch(handler){return async(url,options)=>{
  if(url.includes('/payment_intents/'))return new Response(JSON.stringify({livemode:false,status:'succeeded',latest_charge:{paid:true,refunded:false,disputed:false,amount_refunded:0}}));
  return handler(url,options);
 };}
+
+for(const [name,items,physical] of [
+ ['standard paperback',[{sku:'wildborn-paperback',quantity:1}],true],
+ ['Special Pack',[{sku:'beneath-falling-leaves-special-pack',quantity:1}],true],
+ ['multiple physical editions',[{sku:'wildborn-special-pack',quantity:2},{sku:'beneath-falling-leaves-paperback',quantity:2}],true],
+ ['international ebook',[{sku:'the-glass-tapestry-ebook',quantity:1}],false],
+ ['ebook without address',[{sku:'wildborn-ebook',quantity:1}],false],
+ ['mixed pack and ebook',[{sku:'wildborn-special-pack',quantity:1},{sku:'beneath-falling-leaves-ebook',quantity:1}],true]
+])test(`shipping contract: ${name}`,async()=>{
+ const original=globalThis.fetch;let captured;
+ globalThis.fetch=providerFetch(async(url,options)=>{
+  captured=new URLSearchParams(options.body);
+  return Response.json({id:'cs_test_shipping123',livemode:false,url:'https://checkout.stripe.com/c/pay/test'});
+ });
+ try{
+  const res=await checkout({request:request('https://sandbox.example.com/api/checkout',{items,shipping_address:{country:'US'},allowed_countries:['US'],shipping:0}),env});
+  assert.equal(res.status,200);
+  assert.deepEqual([...captured].filter(([k])=>k.startsWith('shipping_address_collection')),physical?[['shipping_address_collection[allowed_countries][0]','AU']]:[]);
+  assert.equal(captured.get('shipping_options[0][shipping_rate_data][fixed_amount][amount]'),physical?'1300':null);
+  assert.equal(captured.has('custom_text[shipping_address][message]'),physical);
+  assert.equal(captured.has('payment_method_types[0]'),false);
+  items.forEach((item,i)=>{assert.equal(captured.get(`line_items[${i}][price]`),env[ITEMS[item.sku].priceVariable]);assert.equal(captured.get(`line_items[${i}][quantity]`),String(item.quantity));});
+ }finally{globalThis.fetch=original;}
+});
+
+test('sold-out paperback also prevents Special Pack checkout before session creation',async()=>{
+ const items=[{sku:'wildborn-paperback',quantity:10}];
+ const id=await reserveInventory(env.ORDERS,cleanCart({items}),Math.floor(Date.now()/1000)+3600);
+ await attachCheckoutSession(env.ORDERS,id,'cs_test_soldout');await settleInventory(env.ORDERS,id,'cs_test_soldout');
+ const original=globalThis.fetch;let sessions=0;
+ globalThis.fetch=providerFetch(async()=>{sessions++;throw Error('Must not create checkout');});
+ try{
+  const res=await checkout({request:request('https://sandbox.example.com/api/checkout',{items:[{sku:'wildborn-special-pack',quantity:1}]}),env});
+  assert.equal(res.status,409);assert.equal(sessions,0);assert.equal(env.ORDERS.inspect('wildborn-paperback').on_hand,0);
+ }finally{globalThis.fetch=original;}
+});

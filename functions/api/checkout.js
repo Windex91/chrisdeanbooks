@@ -21,7 +21,8 @@ export async function onRequestPost({request,env}){
     cart.forEach((entry,i)=>{params.set(`line_items[${i}][price]`,priceId(env,entry.sku));params.set(`line_items[${i}][quantity]`,String(entry.quantity));});
     if(hasPhysical){
       params.set('shipping_address_collection[allowed_countries][0]','AU');
-      // Fixed shipping created at checkout from the server-authorized quantity tier.
+      params.set('custom_text[shipping_address][message]','Physical orders ship within Australia only. International readers can buy standard paperbacks through Amazon or email chris@chrisdeanbooks.com for a Special Pack shipping quote.');
+      // The existing flat Australian shipping charge applies once per physical order.
       params.set('shipping_options[0][shipping_rate_data][type]','fixed_amount');
       params.set('shipping_options[0][shipping_rate_data][fixed_amount][currency]','aud');
       params.set('shipping_options[0][shipping_rate_data][fixed_amount][amount]',String(shipping.cents));
