@@ -1,0 +1,7 @@
+/* Fill the About page portrait frame without changing other author images. */
+.about-page-art--portrait{overflow:hidden;isolation:isolate}
+.about-page-art--portrait .about-logo-ring{position:absolute;inset:0;width:100%;height:100%;z-index:0}
+.about-page-art--portrait .author-photo{display:block;width:100%;height:100%;max-width:none;max-height:none;aspect-ratio:auto;object-fit:cover;object-position:center 37%;border:0;box-shadow:none}
+.about-page-art--portrait:before{content:"";position:absolute;inset:0;z-index:1;background:linear-gradient(to top,rgba(16,25,35,.9),transparent 35%);pointer-events:none}
+.about-page-art--portrait:after{z-index:2;pointer-events:none}
+.about-page-art--portrait>p{position:absolute;bottom:32px;left:28px;right:28px;margin:0;text-align:center;color:var(--ink);text-shadow:0 2px 8px #000}
