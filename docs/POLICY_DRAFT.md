@@ -3,6 +3,11 @@
 This is a draft; it has not replaced the public holding policy. Do not activate
 live checkout until the owner confirms and missing details are completed.
 
+## Business and GST
+
+ABN: 26 920 834 116 (supplied by owner). Owner confirmed the business is not
+registered for GST on 10 November 2026. GST is not charged on these sales.
+
 ## Shipping — rate confirmed; dispatch details pending
 
 Australian paperback delivery only at launch; maximum five paperbacks per order.
@@ -40,7 +45,7 @@ may process information outside Australia. These purchase details are not used t
 you up to marketing emails automatically. Contact chris@chrisdeanbooks.com for access,
 correction or privacy questions.
 
-Before publication, confirm business/ABN details, carrier, retention periods and deletion
+Before publication, confirm remaining business details, carrier, retention periods and deletion
 procedure, and the final change-of-mind/dispatch promises. These items are not inferred.
 
 Consumer-rights sources (checked 10 November 2026):

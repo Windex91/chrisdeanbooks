@@ -36,7 +36,8 @@ export async function onRequestPost({request,env}){
     const claim=await createEbookAccess(env,session),orderUrl=siteUrl(env)+'/success/?access='+encodeURIComponent(claim);
     const detail=items.map(x=>escapeHtml(x.title+' — '+x.format+' × '+x.quantity)).join('<br>');
     const amount=n=>'A$'+(n/100).toFixed(2);
-    const totals=`<p>Total paid: ${amount(session.amount_total)} AUD<br>Shipping: ${amount(session.total_details?.amount_shipping||0)}<br>Tax included: ${amount(session.total_details?.amount_tax||0)}</p>`;
+    const taxNote=session.metadata?.gst_treatment==='not_registered'?'GST not charged — seller is not registered for GST.':`Tax included: ${amount(session.total_details?.amount_tax||0)}`;
+    const totals=`<p>Total paid: ${amount(session.amount_total)} AUD<br>Shipping: ${amount(session.total_details?.amount_shipping||0)}<br>${taxNote}</p>`;
     const prefix=session.livemode?'':'[SANDBOX — NO REAL ORDER] ';
     if(!row.customer_notified){
       await deliverOrderEmail(env,session.id+'/customer/v1',email,prefix+'Your Christopher Dean Books order',`<h1>Thank you, ${escapeHtml(session.customer_details?.name||'reader')}.</h1><p>Order: ${escapeHtml(session.id)}</p><p>${detail}</p>${totals}<p>${items.some(x=>x.physical)?'Your paperback order will be packed and posted by the author.':''}</p><p><a href="${orderUrl}">View order and EPUB downloads</a></p><p>Keep this link private. Download access expires seven days after checkout was started. Reply to this email for help or renewed access.</p>`);

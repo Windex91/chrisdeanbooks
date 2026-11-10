@@ -61,11 +61,12 @@ Use trusted dashboards for secret entry; never commit or paste credentials into 
    for EPUB-only orders. Implemented server-side as 1300 AUD cents; obsolete quantity
    tier variables are ignored. Record `SHIPPING_APPROVED=true` during secure setup.
    Maximum five paperbacks per order remains unchanged.
-9. Obtain the owner's GST status. Use `GST_TREATMENT=not_registered` only if confirmed.
-   For `registered_inclusive`, confirm active Stripe Tax registrations/settings,
-   appropriate product tax codes, inclusive prices and a successful tax calculation;
-   set `TAX_REGISTRATION_VERIFIED=true` only after verification. The current prices
-   have `tax_behavior=unspecified`; they are not yet verified for inclusive GST.
+9. Owner confirmed on 10 November 2026: not registered for GST.
+   ABN supplied by owner: 26 920 834 116. Public ABN Lookup verification was
+   unavailable in this session; this records the owner's declaration only.
+   Set `GST_TREATMENT=not_registered` and `GST_APPROVED=true` during secure
+   configuration. Do not enable Stripe automatic tax or add GST to the approved
+   book prices or A$13 shipping. Confirmation emails state that GST was not charged.
 10. Review `POLICY_DRAFT.md` with the owner, finalise all blanks, publish approved
     policies, then run the real hosted sandbox acceptance checks below.
 
@@ -93,7 +94,7 @@ configuration. Do not create a real payment without separate explicit approval.
 Both `public/assets/catalog.js` live flag and `SHOP_ENABLED` stay false by default.
 Live requests additionally require ALL of these explicit true flags:
 `LIVE_LAUNCH_APPROVED`, `SHIPPING_APPROVED`, `GST_APPROVED`, `POLICIES_APPROVED`,
-`FULFILMENT_TESTS_PASSED`. Shipping is fixed at the approved A$13; GST treatment is still unconfirmed.
+`FULFILMENT_TESTS_PASSED`. Shipping is fixed at the approved A$13; GST treatment is owner-confirmed as not registered.
 These are deployment controls, not evidence: record who approved and what tests passed
 before setting them. Rollback: disable SHOP_ENABLED immediately; leave webhooks running
 so existing paid orders still fulfil. Never disable webhook processing to pause new sales.
