@@ -10,7 +10,7 @@ window.CD_STORE = Object.freeze({
       "format": "Paperback",
       "price": 2499,
       "image": "/assets/img/beneath-falling-leaves-3d.webp",
-      "maxQuantity": 5
+      "maxQuantity": 9007199254740991
     },
     "beneath-falling-leaves-ebook": {
       "title": "Beneath Falling Leaves",
@@ -24,7 +24,7 @@ window.CD_STORE = Object.freeze({
       "format": "Paperback",
       "price": 1599,
       "image": "/assets/img/wildborn-3d.webp",
-      "maxQuantity": 5
+      "maxQuantity": 9007199254740991
     },
     "wildborn-ebook": {
       "title": "Wildborn",
@@ -38,7 +38,7 @@ window.CD_STORE = Object.freeze({
       "format": "Paperback",
       "price": 1599,
       "image": "/assets/img/the-glass-tapestry-3d.webp",
-      "maxQuantity": 5
+      "maxQuantity": 9007199254740991
     },
     "the-glass-tapestry-ebook": {
       "title": "The Glass Tapestry",

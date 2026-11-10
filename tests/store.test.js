@@ -305,7 +305,7 @@ test('Flat A$13 shipping applies once to every supported paperback quantity',()=
   assert.equal(shippingForCart(cart([{sku:'wildborn-paperback',quantity:3},{sku:'the-glass-tapestry-ebook',quantity:1}]),env).cents,1300);
   assert.equal(shippingForCart(cart([{sku:'wildborn-paperback',quantity:2},{sku:'beneath-falling-leaves-paperback',quantity:2}]),env).cents,1300);
   assert.equal(shippingForCart(cart([{sku:'wildborn-paperback',quantity:5}]),env).cents,1300);
-  assert.throws(()=>cart([{sku:'wildborn-paperback',quantity:4},{sku:'beneath-falling-leaves-paperback',quantity:2}]),/Maximum quantity/);
+  assert.equal(shippingForCart(cart([{sku:'wildborn-paperback',quantity:6},{sku:'beneath-falling-leaves-paperback',quantity:2}])).cents,1300);
 });
 
 test('4 paperback Checkout Session still charges only A$13',async()=>{
@@ -322,14 +322,12 @@ test('4 paperback Checkout Session still charges only A$13',async()=>{
   }finally{globalThis.fetch=original;}
 });
 
-test('6 paperbacks are rejected before initiating Stripe checkout',async()=>{
-  const original=globalThis.fetch;
-  globalThis.fetch=async()=>{throw Error('Stripe must not be contacted');};
-  try{
-    const res=await checkout({request:request('https://sandbox.example.com/api/checkout',{items:[{sku:'wildborn-paperback',quantity:4},{sku:'beneath-falling-leaves-paperback',quantity:2}]}),env});
-    assert.equal(res.status,400);
-    assert.match((await res.json()).error,/Maximum quantity/);
-  }finally{globalThis.fetch=original;}
+test('paperback orders above five reserve stock and reject quantities beyond available stock',async()=>{
+  const db=makeOrders();
+  await reserveInventory(db,cleanCart({items:[{sku:'wildborn-paperback',quantity:6}]}),Math.floor(Date.now()/1000)+3600);
+  assert.equal(db.inspect('wildborn-paperback').reserved,6);
+  await assert.rejects(()=>reserveInventory(db,cleanCart({items:[{sku:'wildborn-paperback',quantity:5}]}),Math.floor(Date.now()/1000)+3600));
+  assert.equal(db.inspect('wildborn-paperback').reserved,6);
 });
 
 test('reservation holds the last Glass Tapestry and rejects another buyer before Stripe',async()=>{

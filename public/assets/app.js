@@ -10,12 +10,12 @@
   let cart={};
   try { const parsed=JSON.parse(localStorage.getItem(key)||'{}'); if(parsed&&typeof parsed==='object'&&!Array.isArray(parsed))cart=parsed; }catch{}
   const available=(sku)=>Boolean(STORE.products[sku]);
-  function sanitize(){cart=Object.fromEntries(Object.entries(cart).filter(([k,v])=>available(k)&&Number.isInteger(v)&&v>0).map(([k,v])=>[k,Math.min(v,STORE.products[k].maxQuantity)]));}
+  function sanitize(){cart=Object.fromEntries(Object.entries(cart).filter(([k,v])=>available(k)&&Number.isInteger(v)&&v>0).map(([k,v])=>[k,Math.min(v,STORE.products[k].maxQuantity)]).filter(([,v])=>v>0));}
   function save(){sanitize();try{localStorage.setItem(key,JSON.stringify(cart))}catch{}renderCart();}
   function toast(message){const el=$('#toast');if(!el)return;el.textContent=message;el.classList.add('show');clearTimeout(toast._timer);toast._timer=setTimeout(()=>el.classList.remove('show'),3000);}
   function openCart(){document.body.classList.add('cart-open');$('.cart-drawer')?.setAttribute('aria-hidden','false');$('.cart-drawer .icon-button')?.focus();}
   function closeCart(){document.body.classList.remove('cart-open');$('.cart-drawer')?.setAttribute('aria-hidden','true');$('.cart-toggle')?.focus();}
-  function add(sku){if(!available(sku))return;cart[sku]=Math.min((cart[sku]||0)+1,STORE.products[sku].maxQuantity);save();openCart();toast('Added to your book bag');}
+  function add(sku){if(!available(sku)||STORE.products[sku].maxQuantity<1)return;cart[sku]=Math.min((cart[sku]||0)+1,STORE.products[sku].maxQuantity);save();openCart();toast('Added to your book bag');}
   function renderCart(){sanitize();const count=Object.values(cart).reduce((a,b)=>a+b,0);$$('.cart-count').forEach(el=>el.textContent=String(count));const items=$('#cart-items');if(!items)return;
     if(!count){items.innerHTML='<div class="empty-cart">Your book bag is empty.<br>There are worlds waiting to be discovered.</div>';}
     else items.innerHTML=Object.entries(cart).map(([sku,q])=>{const p=STORE.products[sku];return `<div class="cart-item"><img src="${p.image}" alt="${p.title} cover"><div><h3>${p.title}</h3><span class="kind">${p.format}</span><div class="qty-row"><button data-qty="${sku}" data-delta="-1" aria-label="Remove one ${p.format}">−</button><span>${q}</span><button data-qty="${sku}" data-delta="1" aria-label="Add one ${p.format}" ${q>=p.maxQuantity?'disabled':''}>+</button><button class="remove-item" data-remove="${sku}">Remove</button></div></div><strong class="price">${money(p.price*q)}</strong></div>`;}).join('');
@@ -97,9 +97,10 @@
   }
   async function syncLivePrices(){try{
     const res=await fetch('/api/catalog',{cache:'no-store'});const data=await res.json();if(!res.ok||!data.products)throw Error(data.error||'Cannot verify prices');
-    for(const [sku,p] of Object.entries(STORE.products)){const received=data.products[sku]?.price;if(!Number.isInteger(received)||received<1)throw Error('Missing price: '+sku);p.price=received;}
+    for(const [sku,p] of Object.entries(STORE.products)){const received=data.products[sku]?.price;if(!Number.isInteger(received)||received<1)throw Error('Missing price: '+sku);p.price=received;const stock=data.products[sku].available;if(Number.isInteger(stock)&&stock>=0)p.maxQuantity=stock;}
     $$('[data-edition]').forEach(el=>{const sku=el.dataset.edition;const price=STORE.products[sku];if(price)el.querySelector('strong').textContent=money(price.price);});
     $$('[data-price-sku]').forEach(el=>{const price=STORE.products[el.dataset.priceSku];if(price)el.textContent=money(price.price);});
+    $$('[data-add]').forEach(el=>{el.disabled=STORE.products[el.dataset.add]?.maxQuantity===0;});
     $$('.preview-only').forEach(el=>el.hidden=true);
     pricesReady=true;checkoutReady=true;document.body.classList.add('commerce-ready');renderCart();
   }catch(err){pricesReady=false;checkoutReady=false;document.body.classList.remove('commerce-ready');renderCart();$('#checkout-note').textContent='Price verification failed. Checkout is unavailable.';console.error('Price loading:',err.message);}}

@@ -1,53 +1,31 @@
-# Proposed shop policies — OWNER REVIEW REQUIRED
+# Approved shop policies
 
-This is a draft; it has not replaced the public holding policy. Do not activate
-live checkout until the owner confirms and missing details are completed.
+Owner approved 10 November 2026. Published text: public/policies/index.html.
 
-## Business and GST
+## Business details
 
-ABN: 26 920 834 116 (supplied by owner). Owner confirmed the business is not
-registered for GST on 10 November 2026. GST is not charged on these sales.
+Chris Dean Books is operated by Christopher Dean Windle, sole trader. ABN: 26 920 834 116. All prices are in Australian dollars. We are not registered for GST and do not charge GST.
 
-## Shipping — rate confirmed; dispatch details pending
+## Paperback shipping
 
-Australian paperback delivery only at launch; maximum five paperbacks per order.
-Owner approved 10 November 2026: flat A$13 per Australian paperback order,
-regardless of the number of books within the five-paperback limit.
-EPUB-only orders have no postage charge.
-Proposed dispatch promise: within three business days of payment (owner to confirm).
-Carrier, tracking and delivery estimates: **owner to confirm**. Do not promise arrival dates.
-Email chris@chrisdeanbooks.com about missing, damaged or incorrect deliveries.
+We deliver paperbacks to Australian addresses for a flat A$13 per order. Orders are subject to available stock. EPUB-only orders have no postage charge. We pack and dispatch paperbacks within three business days of confirmed payment, using Australia Post Parcel Post with tracking. Delivery time after dispatch varies by destination and postal conditions; dispatch is not a guaranteed arrival date. Email chris@chrisdeanbooks.com for tracking assistance or missing, damaged or incorrect deliveries.
 
-## EPUB delivery proposal
+## EPUB delivery
 
-EPUB files become available after payment verification through a private link sent
-to the checkout email. Links expire seven days after checkout starts. Keep the link
-private. Downloaded files remain usable after link expiry. Reply to the confirmation
-email for help or renewed access, subject to purchaser and payment verification.
-EPUB compatibility depends on the reader/device; contact us before purchase if unsure.
+After payment verification, we email a private EPUB download link to the address supplied at checkout. Links expire seven days after checkout starts. Keep your link private and save your downloaded file; saved files remain usable after the link expires. For replacement access, email chris@chrisdeanbooks.com with your order reference so we can verify the purchase and payment. EPUB compatibility depends on your reader or device; contact us before buying if unsure. Refunded purchases lose access to further downloads.
 
-## Returns proposal
+## Returns and cancellations
 
-No change-of-mind returns after paperback dispatch or digital fulfilment. Ask promptly
-about cancelling an unshipped order. This proposal does not limit Australian Consumer
-Law rights for faulty, damaged, incorrect or misdescribed goods. Contact
-chris@chrisdeanbooks.com with the order reference and problem so we can arrange the
-applicable remedy. Do not post returns until return arrangements have been agreed.
+We do not accept change-of-mind returns after paperback dispatch or ebook delivery. Contact us promptly to request cancellation of an unshipped order. Nothing in this policy limits your rights under Australian Consumer Law, including remedies for faulty, damaged, incorrect or misdescribed goods. Email chris@chrisdeanbooks.com with your order reference and the issue so we can arrange the appropriate remedy. Please agree return arrangements with us before posting anything back.
 
-## Privacy proposal
+## Privacy
 
-We collect your name, email, order and payment references, and delivery address when
-needed to process payment, deliver books, provide support and maintain business records.
-Stripe handles card details; the shop does not store complete card numbers. Cloudflare
-hosts the website, order database and private EPUB files. Resend sends transactional
-emails. Delivery details may be shared with the agreed postal carrier. Some providers
-may process information outside Australia. These purchase details are not used to sign
-you up to marketing emails automatically. Contact chris@chrisdeanbooks.com for access,
-correction or privacy questions.
+We collect your name, email, order and payment references, and shipping address where needed to process orders, deliver books, provide support and keep business records. Stripe processes payments; our website does not store complete card numbers. Cloudflare hosts our website, order records and private EPUB files. Resend delivers transactional emails. Australia Post receives delivery details needed to deliver your parcel. These providers may process information outside Australia. Buying a book does not automatically subscribe you to marketing emails.
 
-Before publication, confirm remaining business details, carrier, retention periods and deletion
-procedure, and the final change-of-mind/dispatch promises. These items are not inferred.
+## Record retention
 
-Consumer-rights sources (checked 10 November 2026):
-https://www.accc.gov.au/consumers/problem-with-a-product-or-service-you-bought/repair-replace-refund-cancel
-https://www.accc.gov.au/consumers/buying-products-and-services/buying-online
+We retain essential transaction and business records for five years from the later of record creation and completion of the related transaction, or longer where required by law or an unresolved dispute. We review delivery details after 12 months and remove or anonymise information no longer needed for fulfilment, support, disputes or record-keeping. Retention also applies to relevant order emails and exports we control. Contact chris@chrisdeanbooks.com for access, correction or deletion requests; some information must be retained to meet legal obligations.
+
+## Contact
+
+For order, delivery, download or privacy assistance, email chris@chrisdeanbooks.com.

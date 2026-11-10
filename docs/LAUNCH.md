@@ -60,7 +60,7 @@ Use trusted dashboards for secret entry; never commit or paste credentials into 
 8. Shipping is owner-approved: flat A$13 per Australian paperback order, no postage
    for EPUB-only orders. Implemented server-side as 1300 AUD cents; obsolete quantity
    tier variables are ignored. Record `SHIPPING_APPROVED=true` during secure setup.
-   Maximum five paperbacks per order remains unchanged.
+   No five-paperback cap: quantities are checked against available stock.
 9. Owner confirmed on 10 November 2026: not registered for GST.
    ABN supplied by owner: 26 920 834 116. Public ABN Lookup verification was
    unavailable in this session; this records the owner's declaration only.
@@ -118,3 +118,13 @@ so existing paid orders still fulfil. Never disable webhook processing to pause 
 
 References: Cloudflare Pages bindings https://developers.cloudflare.com/pages/functions/bindings/
 Resend idempotency https://resend.com/docs/dashboard/emails/idempotency-keys
+
+## Owner approvals and hosted sandbox evidence — 10 November 2026
+
+Owner approved Australia-only flat A$13 shipping with no five-copy cap, dispatch within three business days using tracked Australia Post, returns, seven-day EPUB links, privacy, and five-year essential-record retention. Review unneeded delivery details after twelve months.
+
+Hosted sandbox mixed order A$31.98: Wildborn paperback + Beneath Falling Leaves EPUB + A$13 postage. Owner confirmed customer and author emails arrived and EPUB downloaded/opened. D1 screenshot showed Wildborn 9 on hand, zero reserved, one sold. Owner confirmed webhook replay did not duplicate stock deduction or emails. Full sandbox refund succeeded; owner confirmed charge.refunded delivery and further download denial. These are owner-observed hosted checks, separate from automated tests.
+
+Retention procedure: annually review completed records and associated order emails/exports. Preserve essential accounting evidence for five years from the later of creation and transaction completion; extend for legal holds/disputes. At twelve months review delivery addresses for removal/anonymisation where no longer necessary, including copies in orders.shipping_json, sent email_outbox.payload_json, owner mail and exports. Do not change unsent outbox payloads or destroy required financial evidence. Provider-controlled records/backups follow provider retention. Deletion is a documented manual review, not an implemented automatic job.
+
+Production still requires deployment, live webhook secret, safe validation and launch gate configuration. Never seed production from sandbox stock or reset live inventory.
