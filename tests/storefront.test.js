@@ -12,13 +12,13 @@ async function storefront(ok, incomplete=false, hash=""){
   const context={location:{hash},requestAnimationFrame:fn=>fn(),window:{},Intl,URLSearchParams,console:{error(){}},localStorage:{getItem:()=>JSON.stringify({'wildborn-paperback':1})},document:{getElementById:id=>id==='purchase'?{scrollIntoView(){scrolled=true;}}:null,body:{dataset:{},classList:{add:x=>classes.add(x),remove:x=>classes.delete(x)}},querySelector:s=>elements.get(s)||null,querySelectorAll:()=>[],addEventListener(){}}};
   vm.createContext(context);vm.runInContext(catalogue,context);
   let requests=0;
-  context.fetch=async()=>{requests++;return {ok,json:async()=>({products:incomplete?{}:Object.fromEntries(Object.entries(context.window.CD_STORE.products).map(([sku,p])=>[sku,{price:p.price}]))})};};
+  context.fetch=async(url)=>{requests++;if(url==='/api/shipping-quote')return {ok:true,json:async()=>({subtotal:1799,shipping:{allowed:true,cents:1295},total:3094})};return {ok,json:async()=>({products:incomplete?{}:Object.fromEntries(Object.entries(context.window.CD_STORE.products).map(([sku,p])=>[sku,{price:p.price}]))})};};
   vm.runInContext(app,context);
   await new Promise(resolve=>setImmediate(resolve));
   return {classes,elements,requests,scrolled};
 }
 test('storefront discovers enabled checkout from server despite static catalogue default',async()=>{
-  const state=await storefront(true);assert.equal(state.requests,1);assert.ok(state.classes.has('commerce-ready'));assert.equal(state.elements.get('#checkout-button').disabled,false);
+  const state=await storefront(true);assert.equal(state.requests,2);assert.ok(state.classes.has('commerce-ready'));assert.equal(state.elements.get('#checkout-button').disabled,false);
 });
 test('storefront hides purchasing when server disables checkout or prices are incomplete',async()=>{
   for(const args of [[false,false],[true,true]]){const state=await storefront(...args);assert.ok(!state.classes.has('commerce-ready'));assert.equal(state.elements.get('#checkout-button').disabled,true);}

@@ -9,9 +9,10 @@ export async function onRequestPost({request,env}){
     const raw=await request.text();if(raw.length>8000)return json({error:'Cart request too large'},413);
     let body;try{body=JSON.parse(raw);}catch{return json({error:'Invalid cart'},400);}
     const cart=cleanCart(body);const hasPhysical=cart.some(x=>x.item.physical);
+    const shipping=shippingForCart(cart,body.country||'AU');
+    if(shipping&&!shipping.allowed)return json({error:shipping.message,quoteRequired:true},422);
     for(const entry of cart){if(!priceId(env,entry.sku))return json({error:`Stripe price missing for ${entry.sku}`},503);if(!entry.item.physical){if(!env.EBOOKS)return json({error:'Ebook storage is not connected'},503);const exists=await env.EBOOKS.head(ebookKey(env,entry.sku));if(!exists)return json({error:'Ebook delivery file has not been uploaded'},503);}}
     await Promise.all(cart.map(entry=>validatePrice(env,entry.sku)));
-    const shipping=shippingForCart(cart,env);
     if(env.GST_TREATMENT==='registered_inclusive'&&env.TAX_REGISTRATION_VERIFIED!=='true')return json({error:'Tax configuration is incomplete'},503);
     // The reservation holds stock during checkout. Stripe automatically expires
     // unpaid sessions after one hour; the signed expired webhook releases them.
@@ -20,8 +21,9 @@ export async function onRequestPost({request,env}){
     const params=new URLSearchParams();params.set('mode','payment');params.set('allow_promotion_codes','true');params.set('success_url',origin+'/success/?session_id={CHECKOUT_SESSION_ID}');params.set('cancel_url',origin+'/cancel/');params.set('customer_creation','always');params.set('integration_identifier','chris_dean_books_qmvbzkrt');params.set('adaptive_pricing[enabled]','false');params.set('metadata[store]','chris-dean-books');params.set('metadata[reservation_id]',reservationId);params.set('expires_at',String(expiresAt));if(env.GST_TREATMENT==='registered_inclusive'){if(env.TAX_REGISTRATION_VERIFIED!=='true')throw Error('Tax registration not verified');params.set('automatic_tax[enabled]','true');}params.set('metadata[gst_treatment]',env.GST_TREATMENT||'sandbox_only');
     cart.forEach((entry,i)=>{params.set(`line_items[${i}][price]`,priceId(env,entry.sku));params.set(`line_items[${i}][quantity]`,String(entry.quantity));});
     if(hasPhysical){
-      params.set('shipping_address_collection[allowed_countries][0]','AU');
-      params.set('custom_text[shipping_address][message]','Physical orders ship within Australia only. International readers can buy standard paperbacks through Amazon or email chris@chrisdeanbooks.com for a Special Pack shipping quote.');
+      params.set('shipping_address_collection[allowed_countries][0]',shipping.country);
+      params.set('metadata[shipping_version]',shipping.version);params.set('metadata[shipping_country]',shipping.country);params.set('metadata[shipping_grams]',String(shipping.grams));params.set('metadata[shipping_cents]',String(shipping.cents));
+      params.set('custom_text[shipping_address][message]','Your shipping price is for the country selected in your bag. To change country, return to your bag. International customs duties, import taxes or clearance fees may apply; any required prepaid arrangements must be confirmed before ordering.');
       // The existing flat Australian shipping charge applies once per physical order.
       params.set('shipping_options[0][shipping_rate_data][type]','fixed_amount');
       params.set('shipping_options[0][shipping_rate_data][fixed_amount][currency]','aud');

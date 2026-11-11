@@ -7,9 +7,10 @@
   const key='chris-dean-book-bag-v1';
   let pricesReady=false;
   let checkoutReady=false;
+  let quoteReady=false, quoteSequence=0;
   let cart={};
   try { const parsed=JSON.parse(localStorage.getItem(key)||'{}'); if(parsed&&typeof parsed==='object'&&!Array.isArray(parsed))cart=parsed; }catch{}
-  const available=(sku)=>Boolean(STORE.products[sku]);
+  const available=(sku)=>Boolean(STORE.products[sku])&&!STORE.products[sku].saleDisabled;
   function sanitize(){cart=Object.fromEntries(Object.entries(cart).filter(([k,v])=>available(k)&&Number.isInteger(v)&&v>0).map(([k,v])=>[k,Math.min(v,STORE.products[k].maxQuantity)]).filter(([,v])=>v>0));}
   function save(){sanitize();try{localStorage.setItem(key,JSON.stringify(cart))}catch{}renderCart();}
   function toast(message){const el=$('#toast');if(!el)return;el.textContent=message;el.classList.add('show');clearTimeout(toast._timer);toast._timer=setTimeout(()=>el.classList.remove('show'),3000);}
@@ -21,6 +22,7 @@
     else items.innerHTML=Object.entries(cart).map(([sku,q])=>{const p=STORE.products[sku];return `<div class="cart-item"><img src="${p.image}" alt="${p.title} cover"><div><h3>${p.title}</h3><span class="kind">${p.format}</span><div class="qty-row"><button data-qty="${sku}" data-delta="-1" aria-label="Remove one ${p.format}">−</button><span>${q}</span><button data-qty="${sku}" data-delta="1" aria-label="Add one ${p.format}" ${q>=p.maxQuantity?'disabled':''}>+</button><button class="remove-item" data-remove="${sku}">Remove</button></div></div><strong class="price">${money(p.price*q)}</strong></div>`;}).join('');
     $('#cart-subtotal').textContent=money(Object.entries(cart).reduce((sum,[sku,q])=>sum+STORE.products[sku].price*q,0));
     const checkout=$('#checkout-button');checkout.disabled=!count||!checkoutReady||!pricesReady;checkout.style.opacity=(!count||!checkoutReady||!pricesReady)?'.52':'1';checkout.style.cursor=(!count||!checkoutReady||!pricesReady)?'not-allowed':'pointer';$('#checkout-note').textContent=!checkoutReady?'Checkout will open after payment and delivery testing is complete.':!pricesReady?'Loading verified prices from our payment provider…':!count?'Add a book to continue.':'';
+    updateShipping();
   }
   document.addEventListener('click',e=>{
     const addButton=e.target.closest('[data-add]');if(addButton){add(addButton.dataset.add);return;}
@@ -35,8 +37,43 @@
   });
   document.addEventListener('keydown',e=>{if(e.key==='Escape'&&document.body.classList.contains('cart-open'))closeCart();});
   $$('.shelf-tab').forEach(button=>button.addEventListener('click',()=>{$$('.shelf-tab').forEach(b=>{b.classList.toggle('active',b===button);b.setAttribute('aria-pressed',String(b===button));});const kind=button.dataset.filter;$$('[data-status]').forEach(tile=>{tile.hidden=kind!=='all'&&tile.dataset.status!==kind;});}));
-  async function checkout(){const button=$('#checkout-button');const note=$('#checkout-note');if(!checkoutReady)return;button.disabled=true;button.textContent='Opening secure checkout…';note.textContent='';try{
-    const res=await fetch('/api/checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({items:Object.entries(cart).map(([sku,quantity])=>({sku,quantity}))})});
+  async function updateShipping(){
+    const sequence=++quoteSequence, button=$('#checkout-button');quoteReady=false;
+    if(!button)return;button.disabled=true;
+    const physical=Object.keys(cart).some(sku=>!sku.endsWith('-ebook'));
+    if($('#delivery-country-wrap'))$('#delivery-country-wrap').hidden=!physical;
+    if($('#shipping-enquiry'))$('#shipping-enquiry').hidden=true;
+    if($('#shipping-message'))$('#shipping-message').textContent='';
+    if($('#cart-shipping'))$('#cart-shipping').textContent='—';
+    if($('#cart-total'))$('#cart-total').textContent='—';
+    if(!pricesReady||!checkoutReady||!Object.keys(cart).length)return;
+    const country=$('#delivery-country')?.value||'AU';
+    try{
+      const res=await fetch('/api/shipping-quote',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({country,items:Object.entries(cart).map(([sku,quantity])=>({sku,quantity}))})});
+      const data=await res.json();if(sequence!==quoteSequence)return;
+      if(!res.ok||!Number.isSafeInteger(data.subtotal))throw Error(data.error||'Unable to calculate shipping. Please try again.');
+      $('#cart-subtotal').textContent=money(data.subtotal);
+      const blocked=data.shipping&&!data.shipping.allowed;
+      if($('#cart-shipping'))$('#cart-shipping').textContent=blocked?'Quote required':money(data.shipping?.cents||0);
+      if($('#cart-total'))$('#cart-total').textContent=blocked?'Quote required':money(data.total);
+      if($('#shipping-message'))$('#shipping-message').textContent=blocked?data.shipping.message:physical?'Tracked shipping, charged once per order. Promo codes can be entered at Stripe Checkout.':'Digital delivery — no shipping address or postage required.';
+      if(blocked&&$('#shipping-enquiry')){
+        const link=$('#shipping-enquiry');link.hidden=false;
+        link.href='mailto:chris@chrisdeanbooks.com?subject='+encodeURIComponent('International shipping quote — '+Object.keys(cart).map(sku=>STORE.products[sku].title+' '+STORE.products[sku].format).join(', '))+'&body='+encodeURIComponent('Delivery country: '+country+'\n\n'+Object.entries(cart).map(([sku,q])=>STORE.products[sku].title+' — '+STORE.products[sku].format+' × '+q).join('\n'));
+      }
+      quoteReady=!blocked;button.disabled=!!blocked;button.style.opacity=blocked?'.52':'1';button.style.cursor=blocked?'not-allowed':'pointer';
+      $('#checkout-note').textContent=blocked?'Your bag is saved. Requesting a quote does not place an order or take payment.':'';
+    }catch(err){if(sequence===quoteSequence)$('#checkout-note').textContent=err.message;}
+  }
+  $('#delivery-country')?.addEventListener('change',updateShipping);
+  async function loadCountries(){
+    const select=$('#delivery-country');if(!select)return;
+    try{const res=await fetch('/api/shipping-quote',{cache:'no-store'});if(!res.ok)return;const data=await res.json();
+      if(Array.isArray(data.countries))select.innerHTML=data.countries.map(c=>'<option value="'+escapeHtml(c.code)+'">'+escapeHtml(c.name)+'</option>').join('')+'<option value="OTHER">Other destination — request a quote</option>';
+    }catch{}
+  }
+  async function checkout(){const button=$('#checkout-button');const note=$('#checkout-note');if(!checkoutReady||!quoteReady)return;button.disabled=true;button.textContent='Opening secure checkout…';note.textContent='';try{
+    const res=await fetch('/api/checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({country:$('#delivery-country')?.value||'AU',items:Object.entries(cart).map(([sku,quantity])=>({sku,quantity}))})});
     const data=await res.json();if(!res.ok||!data.url)throw new Error(data.error||'Checkout is temporarily unavailable.');
     location.assign(data.url);
   }catch(err){note.textContent=err.message||'Checkout could not be opened.';button.disabled=false;button.textContent='Continue to secure checkout ↗';}}
@@ -97,7 +134,7 @@
   }
   async function syncLivePrices(){try{
     const res=await fetch('/api/catalog',{cache:'no-store'});const data=await res.json();if(!res.ok||!data.products)throw Error(data.error||'Cannot verify prices');
-    for(const [sku,p] of Object.entries(STORE.products)){const received=data.products[sku]?.price;if(!Number.isInteger(received)||received<1)throw Error('Missing price: '+sku);p.price=received;const stock=data.products[sku].available;if(Number.isInteger(stock)&&stock>=0)p.maxQuantity=stock;}
+    for(const [sku,p] of Object.entries(STORE.products)){const received=data.products[sku]?.price;if(!Number.isInteger(received)||received<1)throw Error('Missing price: '+sku);p.price=received;p.saleDisabled=data.products[sku].saleDisabled===true;const stock=data.products[sku].available;if(Number.isInteger(stock)&&stock>=0)p.maxQuantity=stock;}
     $$('[data-edition]').forEach(el=>{const sku=el.dataset.edition;const price=STORE.products[sku];if(price)el.querySelector('strong').textContent=money(price.price);});
     $$('[data-price-sku]').forEach(el=>{const price=STORE.products[el.dataset.priceSku];if(price)el.textContent=money(price.price);});
     $$('[data-add]').forEach(el=>{el.disabled=STORE.products[el.dataset.add]?.maxQuantity===0;});
@@ -107,5 +144,5 @@
   }catch(err){pricesReady=false;checkoutReady=false;document.body.classList.remove('commerce-ready');renderCart();$('#checkout-note').textContent='Price verification failed. Checkout is unavailable.';console.error('Price loading:',err.message);}}
   $$('.year').forEach(el=>el.textContent=String(new Date().getFullYear()));
   const nav=document.body.dataset.current;if(nav)$$('.main-nav a').forEach(a=>a.classList.toggle('is-current',a.dataset.nav===nav));
-  renderCart();syncLivePrices();orderStatus();setupContact();
+  renderCart();loadCountries();syncLivePrices();orderStatus();setupContact();
 })();

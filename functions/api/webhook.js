@@ -1,4 +1,6 @@
-import {verifyStripeSignature,json,lineItems,purchasedSkus,siteUrl,escapeHtml,settleInventory,releaseInventory,stripeMode,ITEMS,isNoCostOrder} from '../../lib/commerce.js';
+import {verifyShippingSession} from '../../lib/shipping.js';
+import {customerOrderEmail,ownerOrderEmail} from '../../lib/order-emails.js';
+import {verifyStripeSignature,json,lineItems,purchasedSkus,siteUrl,settleInventory,releaseInventory,stripeMode,ITEMS,isNoCostOrder} from '../../lib/commerce.js';
 import {createEbookAccess} from '../../lib/access.js';
 import {deliverOrderEmail,paymentClear} from '../../lib/fulfilment.js';
 export async function onRequestPost({request,env}){
@@ -26,7 +28,7 @@ export async function onRequestPost({request,env}){
     for(const item of items){if(item.quantity>ITEMS[item.sku].maxQuantity)throw Error('Invalid paid quantity');}
     const email=session.customer_details?.email||session.customer_email;if(!email)throw Error('Missing customer email');
     const address=session.collected_information?.shipping_details||session.shipping_details||null;
-    if(items.some(x=>x.physical)&&(!address?.address||address.address.country!=='AU'))throw Error('Missing Australian shipping address');
+    verifyShippingSession(session,items);
     await settleInventory(env.ORDERS,session.metadata.reservation_id,session.id);
     await env.ORDERS.batch([
       env.ORDERS.prepare('INSERT OR IGNORE INTO orders (session_id,email,items_json,shipping_json) VALUES (?,?,?,?)').bind(session.id,email,JSON.stringify(items),JSON.stringify(address)),
@@ -34,18 +36,13 @@ export async function onRequestPost({request,env}){
     ]);
     const row=await env.ORDERS.prepare('SELECT customer_notified,owner_notified FROM orders WHERE session_id=?').bind(session.id).first();
     const claim=await createEbookAccess(env,session),orderUrl=siteUrl(env)+'/success/?access='+encodeURIComponent(claim);
-    const detail=items.map(x=>escapeHtml(x.title+' — '+x.format+' × '+x.quantity)).join('<br>');
-    const amount=n=>'A$'+(n/100).toFixed(2);
-    const taxNote=session.metadata?.gst_treatment==='not_registered'?'GST not charged — seller is not registered for GST.':`Tax included: ${amount(session.total_details?.amount_tax||0)}`;
-    const discount=session.total_details?.amount_discount||0;
-    const totals=`<p>${discount?'Discount: '+amount(discount)+' AUD<br>':''}Total paid: ${amount(session.amount_total)} AUD<br>Shipping: ${amount(session.total_details?.amount_shipping||0)}<br>${taxNote}</p>`;
     const prefix=session.livemode?'':'[SANDBOX — NO REAL ORDER] ';
     if(!row.customer_notified){
-      await deliverOrderEmail(env,session.id+'/customer/v1',email,prefix+'Your Christopher Dean Books order',`<h1>Thank you, ${escapeHtml(session.customer_details?.name||'reader')}.</h1><p>Order: ${escapeHtml(session.id)}</p><p>${detail}</p>${totals}<p>${items.some(x=>x.physical)?'Your paperback order will be packed and posted by the author.':''}</p><p><a href="${orderUrl}">View order and EPUB downloads</a></p><p>Keep this link private. Download access expires seven days after checkout was started. Reply to this email for help or renewed access.</p>`);
+      await deliverOrderEmail(env,session.id+'/customer/v1',email,prefix+'Your Christopher Dean Books order',customerOrderEmail(session,items,orderUrl));
       await env.ORDERS.prepare('UPDATE orders SET customer_notified=1 WHERE session_id=?').bind(session.id).run();
     }
     if(!row.owner_notified){
-      await deliverOrderEmail(env,session.id+'/owner/v1',env.SHOP_OWNER_EMAIL,prefix+'New paid book order',`<h2>Paid order ${escapeHtml(session.id)}</h2><p>Customer: ${escapeHtml(email)}</p><p>${detail}</p>${totals}<pre>${escapeHtml(address?JSON.stringify(address,null,2):'Digital-only order; no postage')}</pre>`);
+      await deliverOrderEmail(env,session.id+'/owner/v1',env.SHOP_OWNER_EMAIL,prefix+'New paid book order',ownerOrderEmail(session,items,email,address));
       await env.ORDERS.prepare('UPDATE orders SET owner_notified=1 WHERE session_id=?').bind(session.id).run();
     }
     return json({received:true});

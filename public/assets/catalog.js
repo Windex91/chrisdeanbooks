@@ -42,23 +42,16 @@ window.CD_STORE = Object.freeze({
     "beneath-falling-leaves-special-pack": {
       "title": "Beneath Falling Leaves",
       "format": "Special Pack",
-      "price": 3399,
+      "price": 3599,
       "image": "/assets/img/beneath-falling-leaves-3d.webp",
       "maxQuantity": 9007199254740991
     },
     "wildborn-special-pack": {
       "title": "Wildborn",
       "format": "Special Pack",
-      "price": 2499,
+      "price": 2799,
       "image": "/assets/img/wildborn-3d.webp",
       "maxQuantity": 9007199254740991
-    },
-    "the-glass-tapestry-ebook": {
-      "title": "The Glass Tapestry",
-      "format": "EPUB",
-      "price": 299,
-      "image": "/assets/img/the-glass-tapestry-3d.webp",
-      "maxQuantity": 1
     }
   }
 });

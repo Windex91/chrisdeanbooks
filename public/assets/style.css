@@ -73,3 +73,6 @@ body:not(.commerce-ready) .library-purchase { display:none; }
 .hero-art:focus-visible{outline:2px solid var(--gold);outline-offset:4px}
 #purchase{scroll-margin-top:110px}
 @media(max-width:600px){.hero-stats{flex-wrap:wrap}.feature-pause{font-size:10px}}
+
+/* Delivery totals and country selection keep the existing book-bag theme. */
+.cart-drawer{overflow-y:auto}.drawer-head,.cart-foot{flex-shrink:0}.cart-items{flex:1 0 auto;overflow:visible}.cart-foot label{display:block;margin-bottom:8px;font:13px Inter,sans-serif}.cart-foot select{width:100%;padding:10px;background:#101923;color:#F5F0E6;border:1px solid #768C9C;margin-bottom:16px;font:14px Inter,sans-serif}.cart-foot #shipping-message{font-size:12px;line-height:1.5;margin:10px 0}.cart-foot #shipping-enquiry{display:block;font-size:12px;margin:12px 0}.cart-foot #shipping-enquiry[hidden]{display:none}.cart-foot .subtotal strong{font:600 16px Inter,sans-serif}.cart-foot #checkout-note{font-size:12px;line-height:1.5}
