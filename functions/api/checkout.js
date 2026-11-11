@@ -1,9 +1,9 @@
-import {ITEMS,checkoutAllowed,stripeMode,validatePrice,json,cleanCart,shippingForCart,priceId,ebookKey,siteUrl,reserveInventory,attachCheckoutSession,releaseInventory,StockUnavailableError} from '../../lib/commerce.js';
+import {ITEMS,checkoutAllowed,stripeMode,validatePrice,json,cleanCart,shippingForCart,priceId,ebookKey,siteUrl,checkoutOriginAllowed,reserveInventory,attachCheckoutSession,releaseInventory,StockUnavailableError} from '../../lib/commerce.js';
 export async function onRequestPost({request,env}){
   try{
     if(!checkoutAllowed(env))return json({error:'The bookshop is in preview mode. Checkout is not enabled yet.'},503);
     const origin=siteUrl(env);
-    if(request.headers.get('Origin')!==origin)return json({error:'Origin not allowed'},403);
+    if(!checkoutOriginAllowed(env,request.headers.get('Origin')))return json({error:'Origin not allowed'},403);
     if(!env.STRIPE_SECRET_KEY||!env.STRIPE_WEBHOOK_SECRET||!env.RESEND_API_KEY||!env.RESEND_FROM_ADDRESS||!env.SHOP_OWNER_EMAIL||!env.ORDERS||(!env.DOWNLOAD_TOKEN_SECRET||env.DOWNLOAD_TOKEN_SECRET.length<32))return json({error:'Shop payment and fulfilment services are not completely configured'},503);
     if(Number(request.headers.get('content-length')||0)>8000)return json({error:'Cart request too large'},413);
     const raw=await request.text();if(raw.length>8000)return json({error:'Cart request too large'},413);
