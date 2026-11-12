@@ -5,6 +5,36 @@
     ['the-glass-tapestry', 'The Glass Tapestry', 'INFINITE REALITIES', 'SPECULATIVE FICTION', 'A magician who can steal from other realities faces the consequences of crossing into one.'],
   ];
 
+  const reviews = {
+  "beneath-falling-leaves": [
+    [
+      "If you’re chasing that epic fantasy high with serious LotR vibes… this one’s for you.",
+      "Dani"
+    ],
+    [
+      "Made me remember why I love high and epic fantasy stories.",
+      "Paige"
+    ]
+  ],
+  "wildborn": [
+    [
+      "Wildborn is one of those incredible fantasy adventure books that comes out of nowhere and suddenly, within two chapters, you can't put it down.",
+      "Kel"
+    ],
+    [
+      "This was a refreshing read that pulled me in from the start.",
+      "Sean"
+    ]
+  ],
+  "the-glass-tapestry": [
+    [
+      "Weak knees and sweaty palms occurred during the reading of The Glass Tapestry - the tension and unfolding of events kept us guessing and on the edge of our seat until to the very end.",
+      "Chloe"
+    ]
+  ]
+};
+  const reviewVisits = Object.create(null);
+
   // Use the Sydney calendar date so the change happens on Monday locally, even during daylight saving.
   const date = new Intl.DateTimeFormat('en-CA', { timeZone: 'Australia/Sydney', year: 'numeric', month: '2-digit', day: '2-digit' });
   const parts = Object.fromEntries(date.formatToParts(new Date()).map(({ type, value }) => [type, value]));
@@ -53,6 +83,13 @@
       hero.appendChild(outgoing);
     }
     const [slug, title, tagline] = novels[index];
+    const choices = reviews[slug];
+    const visit = reviewVisits[slug] || 0;
+    const [quote, reviewer] = choices[visit % choices.length];
+    reviewVisits[slug] = visit + 1;
+    find('.hero-review blockquote').textContent = '“' + quote + '”';
+    find('.hero-review cite').textContent = '— ' + reviewer;
+    find('.hero-review-book').textContent = 'A reader on ' + title;
     const url = '/books/' + slug + '/#purchase';
     const number = String(index + 1).padStart(2, '0');
     hero.href = url;
