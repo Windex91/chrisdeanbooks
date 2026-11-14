@@ -132,12 +132,25 @@
       finally{button.disabled=false;if(window.turnstile)window.turnstile.reset();}
     });
   }
+  function syncStockButtons(){
+    $('[data-add]').forEach(button=>{
+      const product=STORE.products[button.dataset.add];
+      const soldOut=product?.maxQuantity===0&&!product.saleDisabled;
+      const unavailable=product?.saleDisabled===true;
+      button.disabled=soldOut||unavailable;
+      let status=button.querySelector('[data-stock-status]');
+      if(soldOut||unavailable){
+        if(!status){status=document.createElement('span');status.dataset.stockStatus='';button.appendChild(status);}
+        status.textContent=soldOut?' · Sold out':' · Unavailable';
+      }else status?.remove();
+    });
+  }
   async function syncLivePrices(){try{
     const res=await fetch('/api/catalog',{cache:'no-store'});const data=await res.json();if(!res.ok||!data.products)throw Error(data.error||'Cannot verify prices');
     for(const [sku,p] of Object.entries(STORE.products)){const received=data.products[sku]?.price;if(!Number.isInteger(received)||received<1)throw Error('Missing price: '+sku);p.price=received;p.saleDisabled=data.products[sku].saleDisabled===true;const stock=data.products[sku].available;if(Number.isInteger(stock)&&stock>=0)p.maxQuantity=stock;}
     $$('[data-edition]').forEach(el=>{const sku=el.dataset.edition;const price=STORE.products[sku];if(price)el.querySelector('strong').textContent=money(price.price);});
     $$('[data-price-sku]').forEach(el=>{const price=STORE.products[el.dataset.priceSku];if(price)el.textContent=money(price.price);});
-    $$('[data-add]').forEach(el=>{el.disabled=STORE.products[el.dataset.add]?.maxQuantity===0;});
+    syncStockButtons();
     $$('.preview-only').forEach(el=>el.hidden=true);
     pricesReady=true;checkoutReady=true;document.body.classList.add('commerce-ready');renderCart();
     if(location.hash==='#purchase')requestAnimationFrame(()=>document.getElementById('purchase')?.scrollIntoView({block:'start'}));
