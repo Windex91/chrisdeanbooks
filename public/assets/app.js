@@ -133,7 +133,7 @@
     });
   }
   function syncStockButtons(){
-    $('[data-add]').forEach(button=>{
+    $$('[data-add]').forEach(button=>{
       const product=STORE.products[button.dataset.add];
       const soldOut=product?.maxQuantity===0&&!product.saleDisabled;
       const unavailable=product?.saleDisabled===true;
