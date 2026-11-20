@@ -53,8 +53,8 @@ test('legacy Australian orders remain fulfilable, and old pack prices remain rec
  const e={STRIPE_MODE:'live',STRIPE_PRICE_BENEATH_FALLING_LEAVES_SPECIAL_PACK:'price_old_pack'};
  for(const id of ['price_old_pack',priceId(e,pack)])assert.equal(purchasedSkus(e,[{price:{id},quantity:1}])[0].sku,pack);
 });
-test('Kindle-exclusive Glass EPUB cannot be sold through stale carts or forged requests',()=>{
- assert.throws(()=>cart('the-glass-tapestry-ebook'),/exclusive to Kindle/);
- assert.equal(ITEMS['the-glass-tapestry-ebook'].saleDisabled,true);
+test('Glass EPUB is available independently of physical stock, with no Special Pack',()=>{
+ assert.doesNotThrow(()=>cart('the-glass-tapestry-ebook'));
+ assert.equal(ITEMS['the-glass-tapestry-ebook'].saleDisabled,undefined);
  assert.equal(ITEMS['the-glass-tapestry-special-pack'],undefined);
 });
