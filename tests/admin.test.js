@@ -23,7 +23,7 @@ test('authentication diagnostics log only a fixed reason and keep public denial 
   try{
     const response=await protectAdmin(context);
     assert.equal(response.status,403);
-    assert.equal(await response.text(),'Administrator authentication required.');
+    assert.equal(await response.text(),'Administrator authentication required. Reference: AUTH-01.');
     assert.equal(response.headers.get('Cache-Control'),'no-store');
     assert.deepEqual(messages.map(JSON.parse),[{event:'admin_auth_denied',reason:'configuration'}]);
     context.env={ADMIN_ACCESS_ISSUER:'https://diagnostic-test.cloudflareaccess.com',ADMIN_ACCESS_AUD:'private-audience',ADMIN_EMAIL:'private@example.com'};
