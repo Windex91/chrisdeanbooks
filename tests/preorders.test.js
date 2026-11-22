@@ -87,3 +87,24 @@ test('queued ebook cannot download early; release sends once, grants fresh acces
   assert.equal((await processReleases(env)).cancelled,1);assert.equal(emails,1);
  }finally{Date.now=originalNow;global.fetch=originalFetch;}
 });
+
+test('checkout sends exact Stripe paperback, split and digital-only parameters',async()=>{
+ const {onRequestPost:checkout}=await import('../functions/api/checkout.js');
+ const original=global.fetch;
+ try{for(const [skus,plan,shipping] of [[[pb],'together',1295],[[pb,'wildborn-paperback'],'split',1943],[[ebook],undefined,0]]){
+  const {db,sqlite}=database();sqlite.prepare('INSERT INTO release_job_health VALUES(1,?)').run(Math.floor(Date.now()/1000));
+  const env={ORDERS:db,EBOOKS:{head:async()=>({size:121180})},SITE_URL:'https://preview.example.com',STRIPE_MODE:'sandbox',STRIPE_SECRET_KEY:'sk_test_fixture',STRIPE_WEBHOOK_SECRET:'whsec_fixture',RESEND_API_KEY:'fixture',RESEND_FROM_ADDRESS:'test@example.com',SHOP_OWNER_EMAIL:'owner@example.com',DOWNLOAD_TOKEN_SECRET:'x'.repeat(40),SHOP_ENABLED:'true',DRAGON_PREORDERS_ENABLED:'true',DRAGON_EBOOK_ENABLED:'true'};
+  for(const sku of skus)env[ITEMS[sku].priceVariable]='price_'+sku;
+  let sent;
+  global.fetch=async(url,options={})=>{
+   if(url.includes('/prices/')){const sku=decodeURIComponent(new URL(url).pathname.split('/').pop()).replace('price_','');return Response.json({active:true,currency:'aud',type:'one_time',livemode:false,unit_amount:ITEMS[sku].expectedCents,product:{active:true,metadata:{site_sku:sku}}});}
+   if(url.endsWith('/checkout/sessions')){sent=new URLSearchParams(options.body);return Response.json({id:'cs_test_newdragon123',livemode:false,url:'https://checkout.stripe.com/c/pay/test'});}
+   throw Error('Unexpected request');
+  };
+  const r=await checkout({env,request:new Request(env.SITE_URL+'/api/checkout',{method:'POST',headers:{Origin:env.SITE_URL,'Content-Type':'application/json'},body:JSON.stringify({items:skus.map(sku=>({sku,quantity:1})),country:'AU',shippingPlan:plan,shipping:1,weight:1})})});
+  assert.equal(r.status,200);assert.equal(sent.get('mode'),'payment');assert.equal(sent.get('allow_promotion_codes'),'true');
+  for(const [i,sku] of skus.entries())assert.equal(sent.get(`line_items[${i}][price]`),'price_'+sku);
+  if(shipping){assert.equal(sent.get('shipping_options[0][shipping_rate_data][fixed_amount][amount]'),String(shipping));assert.equal(sent.get('shipping_address_collection[allowed_countries][0]'),'AU');assert.equal(sent.get('metadata[shipping_plan]'),plan);}
+  else{assert.equal(sent.get('shipping_address_collection[allowed_countries][0]'),null);assert.equal(sent.get('shipping_options[0][shipping_rate_data][fixed_amount][amount]'),null);assert.match(sent.get('custom_text[submit][message]'),/24 December 2026/);}
+ }}finally{global.fetch=original;}
+});
