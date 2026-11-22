@@ -1,3 +1,4 @@
+import {isPending,EBOOK_RELEASE_LABEL,deliveryNote} from '../../lib/preorders.js';
 import {paymentClear} from '../../lib/fulfilment.js';
 import {json,getPaidSession,lineItems,purchasedSkus} from '../../lib/commerce.js';
 import {verifyEbookAccess} from '../../lib/access.js';
@@ -10,6 +11,6 @@ export async function onRequestGet({request,env}){
     if(!session||!await paymentClear(env,session))return json({paid:false,downloads:[]});
     if(!access)return json({paid:true,downloads:[],hasPhysical:false,requiresEmailLink:true});
     const lines=await lineItems(env,session.id),items=purchasedSkus(env,lines);
-    return json({paid:true,hasPhysical:items.some(p=>p.physical),downloads:items.filter(p=>!p.physical).map(p=>({sku:p.sku,title:p.title,format:p.format}))});
+    return json({paid:true,hasPhysical:items.some(p=>p.physical),deliveryNote:deliveryNote(session,items),pending:items.filter(p=>!p.physical&&isPending(p.sku)).map(p=>({title:p.title,release:EBOOK_RELEASE_LABEL})),downloads:items.filter(p=>!p.physical&&!isPending(p.sku)).map(p=>({sku:p.sku,title:p.title,format:p.format}))});
   }catch(e){console.error('Order lookup:',e.name);return json({error:'Order lookup is unavailable. Please contact the author if you need help.'},502);}
 }

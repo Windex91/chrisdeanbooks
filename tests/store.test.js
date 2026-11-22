@@ -195,13 +195,13 @@ test('public order redirect cannot enumerate purchased book titles',async()=>{
   }finally{globalThis.fetch=original;}
 });
 
-test('catalogue retains eight editions including historical Glass EPUB have approved prices and correct delivery formats',()=>{
+test('catalogue retains existing editions and adds two preorder editions including historical Glass EPUB have approved prices and correct delivery formats',()=>{
   const approved={
     'beneath-falling-leaves-paperback':2599,'beneath-falling-leaves-ebook':299,
     'wildborn-paperback':1799,'wildborn-ebook':299,
     'the-glass-tapestry-paperback':1799,'the-glass-tapestry-ebook':299,'beneath-falling-leaves-special-pack':3599,'wildborn-special-pack':2799
   };
-  assert.equal(Object.keys(ITEMS).length,8);
+  assert.equal(Object.keys(ITEMS).length,10);
   for(const [sku,amount] of Object.entries(approved)){
     const item=ITEMS[sku];
     assert.equal(item.expectedCents,amount);
@@ -209,7 +209,7 @@ test('catalogue retains eight editions including historical Glass EPUB have appr
     assert.ok(env[item.priceVariable]);
     if(!item.physical)assert.ok(ebookKey(env,sku).endsWith('.epub'));
   }
-  assert.throws(()=>cleanCart({items:[{sku:'a-dragons-tale-paperback',quantity:1}]}),/Invalid cart item/);
+  assert.throws(()=>cleanCart({items:[{sku:'a-dragons-tale-special-pack',quantity:1}]}),/Invalid cart item/);
 });
 
 test('multi-book quantities survive Stripe fulfilment mapping',()=>{
@@ -288,7 +288,7 @@ test('server-side price catalogue validates active prices against approved cents
     const res=await catalog({env});
     assert.equal(res.status,200);
     const data=await res.json();
-    assert.equal(Object.keys(data.products).length,8);
+    assert.equal(Object.keys(data.products).length,10);
     assert.equal(data.products['the-glass-tapestry-paperback'].available,1);
     assert.equal(data.products['beneath-falling-leaves-paperback'].price,2599);
     prices.price_bfl_paper.unit_amount=2500;

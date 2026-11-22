@@ -8,6 +8,11 @@
   let pricesReady=false;
   let checkoutReady=false;
   let quoteReady=false, quoteSequence=0;
+  let shippingPlan='';
+  const planField=document.createElement('fieldset');planField.className='delivery-plan';planField.hidden=true;
+  planField.innerHTML='<legend>Ship all physical items together when available?</legend><label><input type="radio" name="shipping-plan" value="together">Yes — ship together around 17 December. Standard shipping.</label><label><input type="radio" name="shipping-plan" value="split">No — send available books first and the pre-order separately. Shipping costs 50% more.</label>';
+  $('#delivery-country-wrap')?.after(planField);
+  planField.addEventListener('change',e=>{shippingPlan=e.target.value;updateShipping();});
   let cart={};
   try { const parsed=JSON.parse(localStorage.getItem(key)||'{}'); if(parsed&&typeof parsed==='object'&&!Array.isArray(parsed))cart=parsed; }catch{}
   const available=(sku)=>Boolean(STORE.products[sku])&&!STORE.products[sku].saleDisabled;
@@ -49,15 +54,16 @@
     if(!pricesReady||!checkoutReady||!Object.keys(cart).length)return;
     const country=$('#delivery-country')?.value||'AU';
     try{
-      const res=await fetch('/api/shipping-quote',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({country,items:Object.entries(cart).map(([sku,quantity])=>({sku,quantity}))})});
+      const res=await fetch('/api/shipping-quote',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({country,shippingPlan,items:Object.entries(cart).map(([sku,quantity])=>({sku,quantity}))})});
       const data=await res.json();if(sequence!==quoteSequence)return;
       if(!res.ok||!Number.isSafeInteger(data.subtotal))throw Error(data.error||'Unable to calculate shipping. Please try again.');
       $('#cart-subtotal').textContent=money(data.subtotal);
+      planField.hidden=!data.shipping?.mixed;
       const blocked=data.shipping&&!data.shipping.allowed;
-      if($('#cart-shipping'))$('#cart-shipping').textContent=blocked?'Quote required':money(data.shipping?.cents||0);
+      if($('#cart-shipping'))$('#cart-shipping').textContent=blocked?(data.shipping.code==='delivery_choice'?'Choose delivery':'Quote required'):money(data.shipping?.cents||0);
       if($('#cart-total'))$('#cart-total').textContent=blocked?'Quote required':money(data.total);
-      if($('#shipping-message'))$('#shipping-message').textContent=blocked?data.shipping.message:physical?'Tracked shipping, charged once per order. Promo codes can be entered at Stripe Checkout.':'Digital delivery — no shipping address or postage required.';
-      if(blocked&&$('#shipping-enquiry')){
+      if($('#shipping-message'))$('#shipping-message').textContent=blocked?data.shipping.message:physical?(data.shipping.plan==='split'?'Two dispatches; 50% shipping supplement included.':'Tracked shipping, charged once per order. Promo codes can be entered at Stripe Checkout.'):'Digital delivery — no shipping address or postage required.';
+      if(blocked&&data.shipping.code!=='delivery_choice'&&$('#shipping-enquiry')){
         const link=$('#shipping-enquiry');link.hidden=false;
         link.href='mailto:chris@chrisdeanbooks.com?subject='+encodeURIComponent('International shipping quote — '+Object.keys(cart).map(sku=>STORE.products[sku].title+' '+STORE.products[sku].format).join(', '))+'&body='+encodeURIComponent('Delivery country: '+country+'\n\n'+Object.entries(cart).map(([sku,q])=>STORE.products[sku].title+' — '+STORE.products[sku].format+' × '+q).join('\n'));
       }
@@ -73,7 +79,7 @@
     }catch{}
   }
   async function checkout(){const button=$('#checkout-button');const note=$('#checkout-note');if(!checkoutReady||!quoteReady)return;button.disabled=true;button.textContent='Opening secure checkout…';note.textContent='';try{
-    const res=await fetch('/api/checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({country:$('#delivery-country')?.value||'AU',items:Object.entries(cart).map(([sku,quantity])=>({sku,quantity}))})});
+    const res=await fetch('/api/checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({country:$('#delivery-country')?.value||'AU',shippingPlan,items:Object.entries(cart).map(([sku,quantity])=>({sku,quantity}))})});
     const data=await res.json();if(!res.ok||!data.url)throw new Error(data.error||'Checkout is temporarily unavailable.');
     location.assign(data.url);
   }catch(err){note.textContent=err.message||'Checkout could not be opened.';button.disabled=false;button.textContent='Continue to secure checkout ↗';}}
@@ -93,8 +99,9 @@
         box.innerHTML='<p class="eyebrow">PAYMENT CONFIRMED</p><h2>Thank you for your order.</h2><p>Your receipt and, where applicable, a private ebook download link will be emailed to the address provided at checkout. If it does not arrive, please check your spam folder or email chris@chrisdeanbooks.com.</p>';
         cart={};save();return;
       }
+      const pending=(data.pending||[]).map(item=>'<p>'+escapeHtml(item.title)+' — pre-order. Download emailed from '+escapeHtml(item.release)+'.</p>').join('');
       const files=(data.downloads||[]).map(item=>`<a class="download-link" rel="noreferrer" href="/api/download?access=${encodeURIComponent(access)}&sku=${encodeURIComponent(item.sku)}">Download ${escapeHtml(item.title)} (${escapeHtml(item.format)}) ↓</a>`).join('');
-      box.innerHTML=`<p class="eyebrow">PAYMENT CONFIRMED</p><h2>Your order is on its way.</h2><p>Thank you for supporting independent storytelling. ${data.hasPhysical?'Your paperback order will be packed and posted by the author.':''}</p>${files||'<p>No digital files are included in this order.</p>'}<p>Private ebook links expire seven days after checkout was started. Contact chris@chrisdeanbooks.com for download assistance.</p>`;
+      box.innerHTML=`<p class="eyebrow">PAYMENT CONFIRMED</p><h2>Thank you for your order.</h2><p>Thank you for supporting independent storytelling. ${escapeHtml(data.deliveryNote|| (data.hasPhysical?'Your paperback order will be packed and posted by the author.':''))}</p>${files}${pending}${!files&&!pending?'<p>No digital files are included in this order.</p>':''}<p>Private ebook links last seven days. Pre-orders receive a fresh link at release. Contact chris@chrisdeanbooks.com for download assistance.</p>`;
       cart={};save();
     }catch(err){box.innerHTML='<h2>Order lookup unavailable</h2><p>'+escapeHtml(err.message||'Please contact chris@chrisdeanbooks.com')+'</p>';}
   }
@@ -147,9 +154,11 @@
   }
   async function syncLivePrices(){try{
     const res=await fetch('/api/catalog',{cache:'no-store'});const data=await res.json();if(!res.ok||!data.products)throw Error(data.error||'Cannot verify prices');
-    for(const [sku,p] of Object.entries(STORE.products)){const received=data.products[sku]?.price;if(!Number.isInteger(received)||received<1)throw Error('Missing price: '+sku);p.price=received;p.saleDisabled=data.products[sku].saleDisabled===true;const stock=data.products[sku].available;if(Number.isInteger(stock)&&stock>=0)p.maxQuantity=stock;}
+    for(const [sku,p] of Object.entries(STORE.products)){const received=data.products[sku]?.price;if(!Number.isInteger(received)||received<1)throw Error('Missing price: '+sku);p.price=received;p.preorder=data.products[sku].preorder===true;p.saleDisabled=data.products[sku].saleDisabled===true;const stock=data.products[sku].available;if(Number.isInteger(stock)&&stock>=0)p.maxQuantity=stock;}
     $$('[data-edition]').forEach(el=>{const sku=el.dataset.edition;const price=STORE.products[sku];if(price)el.querySelector('strong').textContent=money(price.price);});
     $$('[data-price-sku]').forEach(el=>{const price=STORE.products[el.dataset.priceSku];if(price)el.textContent=money(price.price);});
+    $$('[data-preorder-label]').forEach(el=>{const product=STORE.products[el.dataset.preorderLabel];el.textContent=(product.preorder?'Pre-order ':'Add ')+(el.dataset.preorderLabel.endsWith('-ebook')?'ebook':'paperback')+(product.preorder?'':' to bag');});
+    $$('[data-dragon-dates]').forEach(el=>{el.textContent=(STORE.products['a-dragons-tale-paperback'].preorder?'Paperbacks expected to ship around 17 December 2026. ':'Paperback orders are open. ')+(STORE.products['a-dragons-tale-ebook'].preorder?'EPUB release: 24 December 2026 at 12:01am Sydney time. ':'EPUB available now. ')+'Charged at checkout. No Special Pack is offered.';});
     syncStockButtons();
     $$('.preview-only').forEach(el=>el.hidden=true);
     pricesReady=true;checkoutReady=true;document.body.classList.add('commerce-ready');renderCart();

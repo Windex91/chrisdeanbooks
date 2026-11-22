@@ -1,0 +1,9 @@
+name = "chrisdeanbooks-ebook-release"
+main = "index.js"
+compatibility_date = "2026-11-09"
+[triggers]
+crons = ["* * * * *"]
+[vars]
+SITE_URL = "https://chrisdeanbooks.com"
+[observability]
+enabled = true

@@ -9,7 +9,7 @@ async function storefront(ok, incomplete=false, hash=""){
   const classes=new Set();
   const elements=new Map();
   for(const key of ['#cart-items','#cart-subtotal','#checkout-button','#checkout-note'])elements.set(key,{style:{},addEventListener(){}});
-  const context={location:{hash},requestAnimationFrame:fn=>fn(),window:{},Intl,URLSearchParams,console:{error(){}},localStorage:{getItem:()=>JSON.stringify({'wildborn-paperback':1})},document:{getElementById:id=>id==='purchase'?{scrollIntoView(){scrolled=true;}}:null,body:{dataset:{},classList:{add:x=>classes.add(x),remove:x=>classes.delete(x)}},querySelector:s=>elements.get(s)||null,querySelectorAll:()=>[],addEventListener(){}}};
+  const context={location:{hash},requestAnimationFrame:fn=>fn(),window:{},Intl,URLSearchParams,console:{error(){}},localStorage:{getItem:()=>JSON.stringify({'wildborn-paperback':1})},document:{createElement:()=>({addEventListener(){}}),getElementById:id=>id==='purchase'?{scrollIntoView(){scrolled=true;}}:null,body:{dataset:{},classList:{add:x=>classes.add(x),remove:x=>classes.delete(x)}},querySelector:s=>elements.get(s)||null,querySelectorAll:()=>[],addEventListener(){}}};
   vm.createContext(context);vm.runInContext(catalogue,context);
   let requests=0;
   context.fetch=async(url)=>{requests++;if(url==='/api/shipping-quote')return {ok:true,json:async()=>({subtotal:1799,shipping:{allowed:true,cents:1295},total:3094})};return {ok,json:async()=>({products:incomplete?{}:Object.fromEntries(Object.entries(context.window.CD_STORE.products).map(([sku,p])=>[sku,{price:p.price}]))})};};

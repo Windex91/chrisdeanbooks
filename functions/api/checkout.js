@@ -1,3 +1,5 @@
+import {dragonAvailable,isPending,DRAGON_EBOOK} from '../../lib/preorders.js';
+import {quoteDelivery} from '../../lib/preorder-shipping.js';
 import {ITEMS,checkoutAllowed,stripeMode,validatePrice,json,cleanCart,shippingForCart,priceId,ebookKey,siteUrl,checkoutOriginAllowed,reserveInventory,attachCheckoutSession,releaseInventory,StockUnavailableError} from '../../lib/commerce.js';
 export async function onRequestPost({request,env}){
   try{
@@ -9,9 +11,9 @@ export async function onRequestPost({request,env}){
     const raw=await request.text();if(raw.length>8000)return json({error:'Cart request too large'},413);
     let body;try{body=JSON.parse(raw);}catch{return json({error:'Invalid cart'},400);}
     const cart=cleanCart(body);const hasPhysical=cart.some(x=>x.item.physical);
-    const shipping=shippingForCart(cart,body.country||'AU');
+    const shipping=quoteDelivery(cart,body.country||'AU',body.shippingPlan);
     if(shipping&&!shipping.allowed)return json({error:shipping.message,quoteRequired:true},422);
-    for(const entry of cart){if(!priceId(env,entry.sku))return json({error:`Stripe price missing for ${entry.sku}`},503);if(!entry.item.physical){if(!env.EBOOKS)return json({error:'Ebook storage is not connected'},503);const exists=await env.EBOOKS.head(ebookKey(env,entry.sku));if(!exists)return json({error:'Ebook delivery file has not been uploaded'},503);}}
+    for(const entry of cart){if(!await dragonAvailable(env,entry.sku))return json({error:'This pre-order is not available yet. Please check back shortly.'},503);if(!priceId(env,entry.sku))return json({error:`Stripe price missing for ${entry.sku}`},503);if(!entry.item.physical){if(!env.EBOOKS)return json({error:'Ebook storage is not connected'},503);const exists=await env.EBOOKS.head(ebookKey(env,entry.sku));if(!exists)return json({error:'Ebook delivery file has not been uploaded'},503);}}
     await Promise.all(cart.map(entry=>validatePrice(env,entry.sku)));
     if(env.GST_TREATMENT==='registered_inclusive'&&env.TAX_REGISTRATION_VERIFIED!=='true')return json({error:'Tax configuration is incomplete'},503);
     // The reservation holds stock during checkout. Stripe automatically expires
@@ -21,6 +23,8 @@ export async function onRequestPost({request,env}){
     const params=new URLSearchParams();params.set('mode','payment');params.set('allow_promotion_codes','true');params.set('success_url',origin+'/success/?session_id={CHECKOUT_SESSION_ID}');params.set('cancel_url',origin+'/cancel/');params.set('customer_creation','always');params.set('integration_identifier','chris_dean_books_qmvbzkrt');params.set('adaptive_pricing[enabled]','false');params.set('metadata[store]','chris-dean-books');params.set('metadata[reservation_id]',reservationId);params.set('expires_at',String(expiresAt));if(env.GST_TREATMENT==='registered_inclusive'){if(env.TAX_REGISTRATION_VERIFIED!=='true')throw Error('Tax registration not verified');params.set('automatic_tax[enabled]','true');}params.set('metadata[gst_treatment]',env.GST_TREATMENT||'sandbox_only');
     cart.forEach((entry,i)=>{params.set(`line_items[${i}][price]`,priceId(env,entry.sku));params.set(`line_items[${i}][quantity]`,String(entry.quantity));});
     if(hasPhysical){
+      params.set('metadata[shipping_plan_version]','1');params.set('metadata[shipping_plan]',shipping.plan);
+      if(cart.some(x=>isPending(x.sku)))params.set('custom_text[submit][message]',shipping.plan==='split'?'Pre-order: available books ship first; A Dragon’s Tale ships around 17 December 2026. Ebook release: 24 December 2026, 12:01am Sydney.':'Pre-order: physical books ship together around 17 December 2026. Ebook release: 24 December 2026, 12:01am Sydney.');
       params.set('shipping_address_collection[allowed_countries][0]',shipping.country);
       params.set('metadata[shipping_version]',shipping.version);params.set('metadata[shipping_country]',shipping.country);params.set('metadata[shipping_grams]',String(shipping.grams));params.set('metadata[shipping_cents]',String(shipping.cents));
       params.set('custom_text[shipping_address][message]','Your shipping price is for the country selected in your bag. To change country, return to your bag. International customs duties, import taxes or clearance fees may apply; any required prepaid arrangements must be confirmed before ordering.');
@@ -31,6 +35,7 @@ export async function onRequestPost({request,env}){
       params.set('shipping_options[0][shipping_rate_data][display_name]',shipping.displayName);
       if(env.GST_TREATMENT==='registered_inclusive')params.set('shipping_options[0][shipping_rate_data][tax_behavior]','inclusive');
     }
+    if(!hasPhysical&&cart.some(x=>x.sku===DRAGON_EBOOK&&isPending(x.sku)))params.set('custom_text[submit][message]','Ebook pre-order: charged today; private download emailed from 24 December 2026 at 12:01am Sydney.');
     let session;
     try{
       const result=await fetch('https://api.stripe.com/v1/checkout/sessions',{

@@ -59,6 +59,22 @@ window.CD_STORE = Object.freeze({
       "price": 299,
       "image": "/assets/img/the-glass-tapestry-3d.webp",
       "maxQuantity": 1
+    },
+    "a-dragons-tale-paperback": {
+      "title": "A Dragon’s Tale: The Quest for Dragussy",
+      "format": "Paperback",
+      "price": 1599,
+      "image": "/assets/img/a-dragons-tale-3d.webp",
+      "maxQuantity": 30,
+      "preorder": true
+    },
+    "a-dragons-tale-ebook": {
+      "title": "A Dragon’s Tale: The Quest for Dragussy",
+      "format": "EPUB",
+      "price": 299,
+      "image": "/assets/img/a-dragons-tale-3d.webp",
+      "maxQuantity": 1,
+      "preorder": true
     }
   }
 });

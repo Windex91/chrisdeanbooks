@@ -1,3 +1,4 @@
+import {DRAGON_EBOOK,EBOOK_RELEASE,deliveryNote} from '../../lib/preorders.js';
 import {verifyShippingSession} from '../../lib/shipping.js';
 import {customerOrderEmail,ownerOrderEmail} from '../../lib/order-emails.js';
 import {verifyStripeSignature,json,lineItems,purchasedSkus,siteUrl,settleInventory,releaseInventory,stripeMode,ITEMS,isNoCostOrder} from '../../lib/commerce.js';
@@ -31,9 +32,10 @@ export async function onRequestPost({request,env}){
     verifyShippingSession(session,items);
     await settleInventory(env.ORDERS,session.metadata.reservation_id,session.id);
     await env.ORDERS.batch([
-      env.ORDERS.prepare('INSERT OR IGNORE INTO orders (session_id,email,items_json,shipping_json) VALUES (?,?,?,?)').bind(session.id,email,JSON.stringify(items),JSON.stringify(address)),
+      env.ORDERS.prepare('INSERT OR IGNORE INTO orders (session_id,email,items_json,shipping_json) VALUES (?,?,?,?)').bind(session.id,email,JSON.stringify(items),JSON.stringify(address?{...address,delivery_note:deliveryNote(session,items)}:null)),
       env.ORDERS.prepare('INSERT OR IGNORE INTO order_payments (session_id,payment_intent,amount_total,shipping_total,tax_total,currency,livemode) VALUES (?,?,?,?,?,?,?)').bind(session.id,session.payment_intent||'',session.amount_total,session.total_details?.amount_shipping||0,session.total_details?.amount_tax||0,session.currency,Number(session.livemode))
     ]);
+    if(items.some(x=>x.sku===DRAGON_EBOOK)&&session.created*1000<EBOOK_RELEASE)await env.ORDERS.prepare('INSERT OR IGNORE INTO ebook_release_queue (session_id,sku,release_at) VALUES (?,?,?)').bind(session.id,DRAGON_EBOOK,EBOOK_RELEASE/1000).run();
     const row=await env.ORDERS.prepare('SELECT customer_notified,owner_notified FROM orders WHERE session_id=?').bind(session.id).first();
     const claim=await createEbookAccess(env,session),orderUrl=siteUrl(env)+'/success/?access='+encodeURIComponent(claim);
     const prefix=session.livemode?'':'[SANDBOX — NO REAL ORDER] ';

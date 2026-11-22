@@ -1,10 +1,11 @@
+import {dragonAvailable,isPending} from '../../lib/preorders.js';
 import {ITEMS,json,checkoutAllowed,validatePrice} from '../../lib/commerce.js';
 export async function onRequestGet({env}){
   if(!checkoutAllowed(env)||!env.STRIPE_SECRET_KEY||!env.ORDERS?.prepare)return json({error:'The store is in preview mode'},503);
   try{
     const products={};
     for(const [sku,item] of Object.entries(ITEMS)){
-      if(item.saleDisabled){products[sku]={price:item.expectedCents,available:0,saleDisabled:true};continue;}
+      if(item.saleDisabled||!await dragonAvailable(env,sku)){products[sku]={price:item.expectedCents,available:0,saleDisabled:true,preorder:isPending(sku)};continue;}
       const price=await validatePrice(env,sku);
       let available=null;
       if(item.physical){
@@ -12,7 +13,7 @@ export async function onRequestGet({env}){
         if(!stock)throw Error('Missing inventory for '+sku);
         available=Math.max(0,stock.on_hand-stock.reserved);
       }
-      products[sku]={price:price.unit_amount,available};
+      products[sku]={price:price.unit_amount,available,preorder:isPending(sku)};
     }
     return json({currency:'AUD',products});
   }catch(e){console.error('Catalogue sync:',e.message);return json({error:'Store prices are temporarily unavailable'},503);}
